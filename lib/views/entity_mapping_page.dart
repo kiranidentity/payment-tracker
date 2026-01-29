@@ -52,55 +52,114 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       ),
                     ],
                   ),
-                  child: ListTile(
-                    contentPadding: const EdgeInsets.all(16),
-                    title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 4),
-                        Text('Monthly Fee: ${e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'Not Set'}'),
-                      ],
-                    ),
-                    isThreeLine: true,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                             Text(
-                              '₹${viewModel.getEntityTotal(e.id).toStringAsFixed(0)}',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
-                            ),
-                            if (e.monthlyLimit != null && e.monthlyLimit! > 0)
-                              Text(
-                                ' / ${e.monthlyLimit!.toStringAsFixed(0)}',
-                                style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14, color: Colors.grey),
+                  child: Theme(
+                    data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                    child: ExpansionTile(
+                      tilePadding: const EdgeInsets.all(16),
+                      title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(height: 4),
+                          Text('Monthly Fee: ${e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'Not Set'}'),
+                        ],
+                      ),
+                      // isThreeLine: true, // Removed, handled by ExpansionTile spacing
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                               Text(
+                                '₹${viewModel.getEntityTotal(e.id).toStringAsFixed(0)}',
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
                               ),
-                          ],
-                        ),
-                        const SizedBox(width: 8),
-                        IconButton(
-                          icon: const Icon(Icons.add_circle_outline, color: Color(0xFF6366F1)),
-                          tooltip: 'Add Auto-Map Amount',
-                          onPressed: () => _showAddAmountDialog(context, viewModel, e),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                          tooltip: 'Edit Client',
-                          onPressed: () => _showEditEntityDialog(context, viewModel, e),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.delete_outline, color: Colors.red.shade400),
-                          tooltip: 'Delete Student',
-                          onPressed: () => _confirmDelete(context, viewModel, e),
-                        ),
+                              if (e.monthlyLimit != null && e.monthlyLimit! > 0)
+                                Text(
+                                  ' / ${e.monthlyLimit!.toStringAsFixed(0)}',
+                                  style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14, color: Colors.grey),
+                                ),
+                            ],
+                          ),
+                          const SizedBox(width: 8),
+                          // Collapsed Actions (Edit/Delete - kept in header?) 
+                          // No, ExpansionTile acts as the trigger. We can move actions to children or keep them here if careful.
+                          // Keeping minimal actions in header, expanded has details.
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: Colors.blue),
+                            tooltip: 'Edit Client',
+                            onPressed: () => _showEditEntityDialog(context, viewModel, e),
+                          ),
+                        ],
+                      ),
+                      children: [
+                        const Divider(height: 1),
+                        // List of Transactions for this Entity
+                        ...viewModel.getTransactionsForEntity(e.id).map((tx) {
+                           return ListTile(
+                             dense: true,
+                             contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+                             leading: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey.shade400),
+                             title: Text(
+                               "${DateFormat('dd MMM').format(tx.date)} - ${tx.sender}",
+                               style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
+                             ),
+                             subtitle: tx.mappedAmount != null 
+                              ? Text("Full: ₹${tx.amount.toStringAsFixed(0)}", style: const TextStyle(fontSize: 11))
+                              : null,
+                             trailing: Row(
+                               mainAxisSize: MainAxisSize.min,
+                               children: [
+                                 Text(
+                                   "₹${(tx.mappedAmount ?? tx.amount).toStringAsFixed(0)}",
+                                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                                 ),
+                                 const SizedBox(width: 12),
+                                 IconButton(
+                                   icon: const Icon(Icons.link_off, color: Colors.orange, size: 18),
+                                   tooltip: 'Unmap this transaction',
+                                   onPressed: () {
+                                     viewModel.unmapTransaction(tx);
+                                     ScaffoldMessenger.of(context).showSnackBar(
+                                       const SnackBar(content: Text('Transaction unmapped')),
+                                     );
+                                   },
+                                 )
+                               ],
+                             ),
+                           );
+                        }),
+                        if (viewModel.getTransactionsForEntity(e.id).isEmpty)
+                           const Padding(
+                             padding: EdgeInsets.all(16.0),
+                             child: Text("No transactions this month.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
+                           ),
+                        
+                        // Footer Actions
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 16, right: 16),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                                TextButton.icon(
+                                  icon: const Icon(Icons.add_circle_outline, color: Color(0xFF6366F1), size: 18),
+                                  label: const Text("Add Auto-Map Rule", style: TextStyle(color: Color(0xFF6366F1))),
+                                  onPressed: () => _showAddAmountDialog(context, viewModel, e),
+                                ),
+                                const SizedBox(width: 8),
+                                TextButton.icon(
+                                  icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 18),
+                                  label: Text("Delete Client", style: TextStyle(color: Colors.red.shade400)),
+                                  onPressed: () => _confirmDelete(context, viewModel, e),
+                                ),
+                            ],
+                          ),
+                        )
                       ],
                     ),
-                  ),
-                )),
+                  ))),
                 const Divider(height: 32),
               ],
 

@@ -45,6 +45,16 @@ class TransactionViewModel extends ChangeNotifier {
   int get selectedMonth => _selectedMonth;
   int get selectedYear => _selectedYear;
 
+  // Get transactions for a specific entity in the selected month
+  List<TransactionModel> getTransactionsForEntity(String entityId) {
+    return _transactions.where((tx) => 
+      tx.entityId == entityId && 
+      tx.isCredit &&
+      tx.date.month == _selectedMonth &&
+      tx.date.year == _selectedYear
+    ).toList()..sort((a, b) => b.date.compareTo(a.date)); // Newest first
+  }
+
   void setMonth(int month, int year) {
     _selectedMonth = month;
     _selectedYear = year;
