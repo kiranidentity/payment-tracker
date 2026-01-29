@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '../models/transaction_model.dart';
@@ -24,28 +23,34 @@ class PdfParserService {
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
         allowedExtensions: ['pdf'],
+        withData: true, // Crucial for Web & Mobile to get bytes
       );
       print("DEBUG: FilePicker returned: ${result != null}");
       
       if (result != null) {
-        String path = result.files.single.path!;
-        print("DEBUG: File path: $path");
-        File file = File(path);
-        
-        try {
-          print("DEBUG: Reading bytes...");
-          final List<int> bytes = await file.readAsBytes();
-          print("DEBUG: Creating PdfDocument...");
-          final PdfDocument document = PdfDocument(inputBytes: bytes);
-          print("DEBUG: Extracting text...");
-          String text = PdfTextExtractor(document).extractText();
-          document.dispose();
-          print("DEBUG: Text extracted, length: ${text.length}");
-          
-          return _parseText(text);
-        } catch (e) {
-          print("Error parsing PDF inside logic: $e");
-          return [];
+        final platformFile = result.files.single;
+        final bytes = platformFile.bytes;
+
+        if (bytes != null) {
+          try {
+            print("DEBUG: Parsing bytes (Size: ${bytes.length})...");
+            final PdfDocument document = PdfDocument(inputBytes: bytes);
+            
+            print("DEBUG: Extracting text...");
+            String text = PdfTextExtractor(document).extractText();
+            document.dispose();
+            
+            print("DEBUG: Text extracted, length: ${text.length}");
+            return _parseText(text);
+          } catch (e) {
+             print("Error parsing PDF bytes: $e");
+             return [];
+          }
+        } else {
+             print("ERROR: FilePicker returned null bytes despite withData: true");
+             // On some rare mobile devices with large files, this might happen. 
+             // But for statements, it should be fine.
+             return [];
         }
       }
     } catch (e) {
