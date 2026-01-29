@@ -3,6 +3,9 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import '../viewmodels/transaction_viewmodel.dart';
 import '../models/transaction_model.dart';
+import '../theme/app_theme.dart';
+
+
 
 class TransactionHistoryPage extends StatefulWidget {
   const TransactionHistoryPage({super.key});
@@ -25,6 +28,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background, 
       appBar: AppBar(
         title: const Text('Transaction History'),
         actions: [

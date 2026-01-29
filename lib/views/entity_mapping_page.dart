@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../viewmodels/transaction_viewmodel.dart';
 import '../models/entity_model.dart';
 import 'package:intl/intl.dart';
+import '../theme/app_theme.dart';
+
 
 class EntityMappingPage extends StatefulWidget {
   const EntityMappingPage({super.key});
@@ -17,9 +19,11 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Manage Clients'),
+        elevation: 0,
       ),
       body: Consumer<TransactionViewModel>(
         builder: (context, viewModel, child) {
+                 // ... ListView logic ...
           final unmappedNames = viewModel.getUnmappedNames();
           final entities = viewModel.entities;
 
