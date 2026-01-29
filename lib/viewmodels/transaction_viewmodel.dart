@@ -62,27 +62,19 @@ class TransactionViewModel extends ChangeNotifier {
   }
   
   bool get canGoNext {
-    // 1. Determine the "Limit Date" (The furthest we can go forward)
-    // By default, allow going up to the real-world Current Month
-    final now = DateTime.now();
-    DateTime limitDate = DateTime(now.year, now.month);
+    if (_transactions.isEmpty) return false;
 
-    // 2. If we have transactions even further in the future (rare, but possible), extend the limit
-    if (_transactions.isNotEmpty) {
-       final latestTx = _transactions.cast<TransactionModel?>().firstWhere(
-        (tx) => tx!.isCredit, 
-        orElse: () => null
-      );
-      
-      if (latestTx != null) {
-         final latestTxDate = DateTime(latestTx.date.year, latestTx.date.month);
-         if (latestTxDate.isAfter(limitDate)) {
-             limitDate = latestTxDate;
-         }
-      }
-    }
+    // Strict Mode: Limit is the Latest Transaction Date
+    final latestTx = _transactions.cast<TransactionModel?>().firstWhere(
+      (tx) => tx!.isCredit, 
+      orElse: () => null
+    );
 
-    // 3. Check if current selection is before the limit
+    if (latestTx == null) return false;
+    
+    final limitDate = DateTime(latestTx.date.year, latestTx.date.month);
+
+    // Check if current selection is before the limit (Uploaded Data)
     if (_selectedYear < limitDate.year) return true;
     if (_selectedYear == limitDate.year && _selectedMonth < limitDate.month) return true;
     
@@ -92,8 +84,7 @@ class TransactionViewModel extends ChangeNotifier {
   bool get canGoPrevious {
     if (_transactions.isEmpty) return false;
     
-    // Find the oldest CREDIT transaction
-    // (List is sorted Descending, so LastWhere gives the oldest)
+    // Strict Mode: Limit is the Oldest Transaction Date
     final oldestTx = _transactions.cast<TransactionModel?>().lastWhere(
       (tx) => tx!.isCredit, 
       orElse: () => null
@@ -101,10 +92,12 @@ class TransactionViewModel extends ChangeNotifier {
     
     if (oldestTx == null) return false;
     
-    if (_selectedYear < oldestTx.date.year) return false;
-    if (_selectedYear == oldestTx.date.year && _selectedMonth <= oldestTx.date.month) return false;
+    final limitDate = DateTime(oldestTx.date.year, oldestTx.date.month);
+
+    if (_selectedYear > limitDate.year) return true;
+    if (_selectedYear == limitDate.year && _selectedMonth > limitDate.month) return true;
     
-    return true;
+    return false;
   }
 
   void nextMonth() {
