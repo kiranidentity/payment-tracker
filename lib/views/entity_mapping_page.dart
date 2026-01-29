@@ -96,6 +96,38 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       ),
                       children: [
                         const Divider(height: 1),
+                        
+                        // Mapped Aliases Section
+                        if (e.aliases.isNotEmpty)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text("Mapped Names:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
+                                const SizedBox(height: 4),
+                                Wrap(
+                                  spacing: 8,
+                                  runSpacing: 4,
+                                  children: e.aliases.map((alias) => Chip(
+                                    label: Text(alias, style: const TextStyle(fontSize: 12)),
+                                    backgroundColor: Colors.indigo.shade50,
+                                    deleteIcon: const Icon(Icons.close, size: 16, color: Colors.grey),
+                                    onDeleted: () {
+                                       viewModel.removeAlias(e.id, alias);
+                                       ScaffoldMessenger.of(context).showSnackBar(
+                                         const SnackBar(content: Text('Unmapped Name. Transactions moved to Unmapped.')),
+                                       );
+                                    },
+                                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                    visualDensity: VisualDensity.compact,
+                                  )).toList(),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (e.aliases.isNotEmpty) const Divider(height: 1),
+
                         // List of Transactions for this Entity
                         ...viewModel.getTransactionsForEntity(e.id).map((tx) {
                            return ListTile(

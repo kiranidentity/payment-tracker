@@ -456,6 +456,31 @@ class TransactionViewModel extends ChangeNotifier {
     return shavedAmount;
   }
 
+  // Remove an Alias (Unmap logic)
+  Future<void> removeAlias(String entityId, String alias) async {
+    final entity = _entities.firstWhere((e) => e.id == entityId);
+    
+    // 1. Remove from entity's alias list
+    if (entity.aliases.contains(alias)) {
+      entity.aliases.remove(alias);
+      await entity.save();
+    }
+
+    // 2. Unmap all corresponding transactions
+    final affectedTxs = _transactions.where((tx) => 
+      tx.entityId == entityId && 
+      tx.sender == alias // Unmap only transactions from this specific alias
+    ).toList();
+
+    for (var tx in affectedTxs) {
+      tx.entityId = null;
+      tx.mappedAmount = null;
+      await tx.save();
+    }
+
+    notifyListeners();
+  }
+
   // Handle Excess Payment Distribution
   Future<void> handleExcessPayment(String entityId, String action) async {
     final entity = _entities.firstWhere((e) => e.id == entityId);
