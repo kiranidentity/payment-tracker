@@ -62,9 +62,20 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          '₹${viewModel.getEntityTotal(e.id).toStringAsFixed(2)}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                             Text(
+                              '₹${viewModel.getEntityTotal(e.id).toStringAsFixed(0)}',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                            ),
+                            if (e.monthlyLimit != null && e.monthlyLimit! > 0)
+                              Text(
+                                ' / ${e.monthlyLimit!.toStringAsFixed(0)}',
+                                style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14, color: Colors.grey),
+                              ),
+                          ],
                         ),
                         const SizedBox(width: 8),
                         IconButton(
@@ -174,22 +185,45 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
               trailing: PopupMenuButton<String>(
-                onSelected: (entityId) {
-                  viewModel.mapSenderToEntity(unmappedName, entityId);
+                onSelected: (actionId) {
+                  if (actionId == '__ignore__') {
+                    viewModel.ignoreSender(unmappedName);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Ignored "$unmappedName"')),
+                    );
+                  } else {
+                    viewModel.mapSenderToEntity(unmappedName, actionId);
+                  }
                 },
                 itemBuilder: (context) {
+                  final List<PopupMenuEntry<String>> items = [];
+                  
+                  // Option 1: Ignore
+                  items.add(
+                    const PopupMenuItem(
+                      value: '__ignore__',
+                      child: Row(
+                        children: [
+                           Icon(Icons.visibility_off, color: Colors.grey, size: 20),
+                           SizedBox(width: 8),
+                           Text('Ignore Sender', style: TextStyle(color: Colors.grey)),
+                        ],
+                      ),
+                    ),
+                  );
+                  items.add(const PopupMenuDivider());
+
+                  // Option 2: Entities
                   if (entities.isEmpty) {
-                    return [
-                      const PopupMenuItem(
-                        enabled: false,
-                        child: Text('No students created yet'),
-                      )
-                    ];
+                     items.add(const PopupMenuItem(enabled: false, child: Text('No students created yet')));
+                  } else {
+                     items.addAll(entities.map((e) => PopupMenuItem(
+                      value: e.id,
+                      child: Text(e.name),
+                    )));
                   }
-                  return entities.map((e) => PopupMenuItem(
-                    value: e.id,
-                    child: Text(e.name),
-                  )).toList();
+                  
+                  return items;
                 },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
