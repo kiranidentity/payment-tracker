@@ -62,23 +62,31 @@ class TransactionViewModel extends ChangeNotifier {
   }
   
   bool get canGoNext {
-    if (_transactions.isEmpty) return false;
+    // START: Relaxed Navigation Logic (User Request)
+    // Allow navigation up to the current real-time month, even if data is old.
+    final now = DateTime.now();
+    final currentRealMonth = DateTime(now.year, now.month);
+    
+    // Check if current view is before the real-time current month
+    if (_selectedYear < currentRealMonth.year) return true;
+    if (_selectedYear == currentRealMonth.year && _selectedMonth < currentRealMonth.month) return true;
 
-    // Strict Mode: Limit is the Latest Transaction Date
+    // Strict Mode Fallback (Prevent future navigation beyond real-time)
+    return false;
+
+    /* 
+    // OLD STRICT LOGIC (Restricted to Latest Transaction Date)
+    if (_transactions.isEmpty) return false;
     final latestTx = _transactions.cast<TransactionModel?>().firstWhere(
       (tx) => tx!.isCredit, 
       orElse: () => null
     );
-
     if (latestTx == null) return false;
-    
     final limitDate = DateTime(latestTx.date.year, latestTx.date.month);
-
-    // Check if current selection is before the limit (Uploaded Data)
     if (_selectedYear < limitDate.year) return true;
     if (_selectedYear == limitDate.year && _selectedMonth < limitDate.month) return true;
-    
-    return false;
+    return false; 
+    */
   }
 
   bool get canGoPrevious {
