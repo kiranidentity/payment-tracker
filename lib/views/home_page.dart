@@ -634,7 +634,7 @@ class _HomePageState extends State<HomePage> {
             const SizedBox(height: 16),
             TextField(
               controller: feeController,
-              decoration: const InputDecoration(labelText: 'Monthly Fee (₹)', hintText: 'Optional'),
+              decoration: const InputDecoration(labelText: 'Monthly Fee (₹)', hintText: 'e.g. 2500'),
               keyboardType: TextInputType.number,
             ),
           ],

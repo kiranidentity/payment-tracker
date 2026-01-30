@@ -350,7 +350,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               ),
             ),
             const SizedBox(height: 16),
-            const Text('Monthly Fee (Optional)'),
+            const Text('Monthly Fee'),
             TextField(
               controller: amountController,
               keyboardType: TextInputType.number,

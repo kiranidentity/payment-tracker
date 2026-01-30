@@ -240,6 +240,34 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               children: [
                 const SizedBox(height: 4),
                 Text('Monthly Fee: ${e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'Not Set'}'),
+                if (e.aliases.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(Icons.link, size: 12, color: Colors.indigo.shade300),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          // Filter out rule-based aliases for cleaner display here, or show them prettified?
+                          // Let's show simple names. Rules are complex strings.
+                          // Simple alias: "Rahul"
+                          // Rule alias: "rule:500:Rahul"
+                          e.aliases.map((a) {
+                            if (a.startsWith('rule:')) {
+                               final parts = a.split(':');
+                               if(parts.length >= 3) return parts.sublist(2).join(':'); // Just the name part
+                               return 'Rule';
+                            }
+                            return a;
+                          }).toSet().join(', '), 
+                          style: TextStyle(fontSize: 12, color: Colors.indigo.shade300),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ]
               ],
             ),
             trailing: Row(
@@ -415,7 +443,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
                   labelText: 'Fee (₹)',
-                  hintText: 'Optional',
+                  hintText: 'e.g. 2500', 
                   border: OutlineInputBorder(),
                 ),
               ),
