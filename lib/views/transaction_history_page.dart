@@ -171,30 +171,32 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                     final otherParty = tx.isCredit ? tx.sender : tx.receiver;
 
                     return Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.02),
-                            offset: const Offset(0, 2),
-                            blurRadius: 4,
+                            color: Colors.black.withOpacity(0.04),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
                           )
                         ],
                         border: Border.all(color: Colors.grey.shade100),
                       ),
                       child: ListTile(
                         leading: Container(
-                          padding: const EdgeInsets.all(12),
+                          width: 48,
+                          height: 48,
+                          alignment: Alignment.center,
                           decoration: BoxDecoration(
-                            color: tx.isCredit ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2), // Soft Green / Soft Red
-                            borderRadius: BorderRadius.circular(12),
+                            color: Colors.grey.shade50,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.grey.shade200),
                           ),
-                          child: Icon(
-                            tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                            color: tx.isCredit ? const Color(0xFF166534) : const Color(0xFF991B1B), // Dark Green / Dark Red
-                            size: 20,
+                          child: Text(
+                            otherParty.isNotEmpty ? otherParty[0].toUpperCase() : '?',
+                            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
                           ),
                         ),
 

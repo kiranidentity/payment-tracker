@@ -18,6 +18,14 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   String _filterStatus = 'All'; // 'All', 'Paid', 'Pending'
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
   @override
   void initState() {
     super.initState();
@@ -39,7 +47,7 @@ class _HomePageState extends State<HomePage> {
           final entities = viewModel.entities;
           
           // Apply Filters
-          final filteredEntities = entities.where((e) {
+          var filteredEntities = entities.where((e) {
             final received = viewModel.getEntityTotal(e.id);
             final expected = e.monthlyLimit ?? 0.0;
             final isPaid = expected > 0 && received >= expected;
@@ -48,6 +56,13 @@ class _HomePageState extends State<HomePage> {
             if (_filterStatus == 'Pending') return !isPaid;
             return true; 
           }).toList();
+
+          // Apply Search
+          if (_searchQuery.isNotEmpty) {
+            filteredEntities = filteredEntities.where((e) => 
+               e.name.toLowerCase().contains(_searchQuery.toLowerCase())
+            ).toList();
+          }
 
           final unmappedNames = viewModel.getUnmappedNames();
           
@@ -92,6 +107,9 @@ class _HomePageState extends State<HomePage> {
               // DARK GRADIENT HEADER (Replaces Summary Card + Month Selector)
               _buildDarkHeader(context, viewModel),
               
+              // NEW: Search Bar
+              _buildSearchBar(),
+
               // NEW: Filter Chips
               _buildFilterChips(context),
 
@@ -122,6 +140,35 @@ class _HomePageState extends State<HomePage> {
         elevation: 4,
         shape: const StadiumBorder(), // FORCE PILL SHAPE
         isExtended: true,
+      ),
+    );
+  }
+
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 0),
+      child: TextField(
+        controller: _searchController,
+        onChanged: (value) => setState(() => _searchQuery = value),
+        decoration: InputDecoration(
+          hintText: 'Search clients...',
+          prefixIcon: const Icon(Icons.search, size: 20),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(vertical: 0),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade200),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: AppTheme.primary, width: 1.5),
+          ),
+        ),
       ),
     );
   }
@@ -342,38 +389,51 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              // Action Button (Pill)
-              if (isOverpaid)
-                 InkWell(
-                   onTap: () => _showExcessReviewDialog(context, viewModel, entity, received, expected),
-                   child: Container(
-                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                     decoration: BoxDecoration(
-                       color: Colors.blue.withOpacity(0.1),
-                       borderRadius: BorderRadius.circular(20),
+              // Action Buttons (Review or Manual Payment)
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Add Manual Payment Button
+                  IconButton(
+                    onPressed: () => _showManualPaymentDialog(context, viewModel, entity),
+                    icon: Icon(Icons.add_circle_outline, color: AppTheme.primary.withOpacity(0.7), size: 22),
+                    tooltip: 'Add Manual Payment',
+                  ),
+                  const SizedBox(width: 4),
+                  
+                  if (isOverpaid)
+                     InkWell(
+                       onTap: () => _showExcessReviewDialog(context, viewModel, entity, received, expected),
+                       child: Container(
+                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                         decoration: BoxDecoration(
+                           color: Colors.blue.withOpacity(0.1),
+                           borderRadius: BorderRadius.circular(20),
+                         ),
+                         child: const Row(
+                           children: [
+                              Icon(Icons.rate_review, size: 14, color: Colors.blue),
+                              SizedBox(width: 6),
+                              Text("Review", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
+                           ],
+                         ),
+                       ),
+                     )
+                  else
+                     Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          // border: Border.all(color: statusColor.withOpacity(0.2)),
+                        ),
+                        child: Text(
+                          statusText,
+                          style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
+                        ),
                      ),
-                     child: const Row(
-                       children: [
-                          Icon(Icons.rate_review, size: 14, color: Colors.blue),
-                          SizedBox(width: 6),
-                          Text("Review", style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold, fontSize: 12)),
-                       ],
-                     ),
-                   ),
-                 )
-              else
-                 Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      // border: Border.all(color: statusColor.withOpacity(0.2)),
-                    ),
-                    child: Text(
-                      statusText,
-                      style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 12),
-                    ),
-                 ),
+                ],
+              ),
             ],
           ),
           
@@ -779,6 +839,61 @@ class _HomePageState extends State<HomePage> {
           _buildChip('Pending', _filterStatus == 'Pending'),
           const SizedBox(width: 12),
           _buildChip('Paid', _filterStatus == 'Paid'),
+        ],
+      ),
+    );
+  }
+
+  void _showManualPaymentDialog(BuildContext context, TransactionViewModel viewModel, EntityModel entity) {
+    final amountController = TextEditingController(text: entity.monthlyLimit?.toStringAsFixed(0) ?? '');
+    final noteController = TextEditingController(text: 'Manual payment');
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Record Payment for ${entity.name}'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: amountController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Amount',
+                prefixText: '₹',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: noteController,
+              decoration: const InputDecoration(
+                labelText: 'Note (Optional)',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              final amount = double.tryParse(amountController.text);
+              if (amount != null && amount > 0) {
+                await viewModel.addManualPayment(entity.id, amount, noteController.text);
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Payment of ₹$amount recorded for ${entity.name}')),
+                  );
+                }
+              }
+            },
+            child: const Text('Record'),
+          ),
         ],
       ),
     );

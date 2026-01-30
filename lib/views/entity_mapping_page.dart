@@ -189,11 +189,33 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       ...ignoredNames.map((name) => Container(
                         margin: const EdgeInsets.symmetric(vertical: 6),
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey.shade200),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            )
+                          ],
+                          border: Border.all(color: Colors.grey.shade100),
                         ),
                         child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          leading: Container(
+                            width: 48,
+                            height: 48,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade50,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.grey.shade200),
+                            ),
+                            child: Text(
+                              name.isNotEmpty ? name[0].toUpperCase() : '?',
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.grey),
+                            ),
+                          ),
                           title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
                           trailing: TextButton.icon(
                             icon: const Icon(Icons.restore, size: 18),
@@ -488,10 +510,31 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: Colors.grey.shade200),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                )
+              ],
+              border: Border.all(color: Colors.grey.shade100),
             ),
             child: ListTile(
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Container(
+                width: 48,
+                height: 48,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.grey.shade200),
+                ),
+                child: Text(
+                  unmappedName.isNotEmpty ? unmappedName[0].toUpperCase() : '?',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
+                ),
+              ),
               title: Text(unmappedName, style: const TextStyle(fontWeight: FontWeight.w600)),
               subtitle: Text(
                 'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',

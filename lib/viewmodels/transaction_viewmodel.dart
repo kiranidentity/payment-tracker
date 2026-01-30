@@ -427,8 +427,29 @@ class TransactionViewModel extends ChangeNotifier {
   Future<void> unmapTransaction(TransactionModel tx) async {
     tx.entityId = null;
     tx.mappedAmount = null; // Reset mapped amount too
+    
+    // If it was a manual transaction, we might want to delete it instead?
+    // But usually unmapping just removes the link. If it's manual, the user probably 
+    // wants it gone if it's "not a fee", or they can delete it manually from history.
     await tx.save();
     notifyListeners();
+  }
+
+  // NEW: Add a manual payment record
+  Future<void> addManualPayment(String entityId, double amount, String description) async {
+    final newTx = TransactionModel(
+      id: 'manual_${DateTime.now().millisecondsSinceEpoch}',
+      date: DateTime(selectedYear, selectedMonth, DateTime.now().day),
+      amount: amount,
+      description: description,
+      sender: 'Manual Entry',
+      receiver: 'Me',
+      isCredit: true,
+      entityId: entityId,
+    );
+
+    await _dbService.addTransaction(newTx);
+    await loadTransactions();
   }
 
   // Update Partial Mapping Amount
