@@ -109,19 +109,29 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                                 Wrap(
                                   spacing: 8,
                                   runSpacing: 4,
-                                  children: e.aliases.map((alias) => Chip(
-                                    label: Text(alias, style: const TextStyle(fontSize: 12)),
-                                    backgroundColor: Colors.indigo.shade50,
+                                  children: e.aliases.map((alias) {
+                                    String label = alias;
+                                    if (alias.startsWith("rule:")) {
+                                      try {
+                                        final parts = alias.split(':');
+                                        if (parts.length >= 3) {
+                                          label = "₹${parts[1]} from ${parts.sublist(2).join(':')}";
+                                        }
+                                      } catch (_) {}
+                                    }
+                                    return Chip(
+                                    label: Text(label, style: const TextStyle(fontSize: 12)),
+                                    backgroundColor: label.startsWith("₹") ? Colors.indigo.shade100 : Colors.indigo.shade50,
                                     deleteIcon: const Icon(Icons.close, size: 16, color: Colors.grey),
                                     onDeleted: () {
                                        viewModel.removeAlias(e.id, alias);
                                        ScaffoldMessenger.of(context).showSnackBar(
-                                         const SnackBar(content: Text('Unmapped Name. Transactions moved to Unmapped.')),
+                                         const SnackBar(content: Text('Unmapped Rule/Name. Transactions moved to Unmapped.')),
                                        );
                                     },
                                     materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                                     visualDensity: VisualDensity.compact,
-                                  )).toList(),
+                                  );}).toList(),
                                 ),
                               ],
                             ),
@@ -342,23 +352,39 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
   }
 
   void _showAddAmountDialog(BuildContext context, TransactionViewModel viewModel, EntityModel entity) {
-    final controller = TextEditingController();
+    final amountController = TextEditingController();
+    final senderController = TextEditingController();
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Auto-Map Amount for ${entity.name}'),
+        title: Text('Auto-Map Rule for ${entity.name}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Any future transaction with this EXACT amount will be automatically assigned to this client.'),
+            const Text(
+              'Map future transactions automatically if they match BOTH the amount and sender name.',
+              style: TextStyle(fontSize: 13, color: Colors.grey),
+            ),
             const SizedBox(height: 16),
             TextField(
-              controller: controller,
+              controller: amountController,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Amount (e.g., 500)',
                 prefixText: '₹',
                 border: OutlineInputBorder(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: senderController,
+              decoration: const InputDecoration(
+                labelText: 'Sender Name (e.g., Rahul)',
+                hintText: 'Must match exactly',
+                border: OutlineInputBorder(),
+                prefixIcon: Icon(Icons.person_outline),
               ),
             ),
           ],
@@ -370,16 +396,22 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
           ),
           ElevatedButton(
             onPressed: () {
-              final amount = double.tryParse(controller.text);
-              if (amount != null) {
-                viewModel.mapAmountToEntity(amount, entity.id);
+              final amount = double.tryParse(amountController.text);
+              final sender = senderController.text.trim();
+              
+              if (amount != null && sender.isNotEmpty) {
+                viewModel.addStrictAutoMapRule(amount, sender, entity.id);
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Added rule: ₹$amount -> ${entity.name}')),
+                  SnackBar(content: Text('Added Rule: ₹$amount from $sender -> ${entity.name}')),
+                );
+              } else if (sender.isEmpty) {
+                 ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Sender Name is required for strict mapping.')),
                 );
               }
             },
-            child: const Text('Add Auto-Map'),
+            child: const Text('Add Rule'),
           ),
         ],
       ),

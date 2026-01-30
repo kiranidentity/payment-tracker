@@ -160,12 +160,47 @@ class TransactionViewModel extends ChangeNotifier {
 
         final otherParty = tx.isCredit ? tx.sender : tx.receiver;
         for (var entity in _entities) {
-          bool nameMatch = entity.aliases.contains(otherParty);
-          bool amountMatch = entity.amountAliases.contains(tx.amount);
-          
-          if (nameMatch || amountMatch) {
+          bool matchFound = false;
+
+          // 1. Check Aliases (Names & Strict Rules)
+          for (var alias in entity.aliases) {
+            if (alias.startsWith("rule:")) {
+              // strict rule: "rule:500.0:Rahul"
+              try {
+                final parts = alias.split(':');
+                 // Ensure valid rule
+                if (parts.length >= 3) {
+                  final ruleAmount = double.tryParse(parts[1]);
+                  // Re-join rest in case name has colons
+                  final ruleSender = parts.sublist(2).join(':'); 
+                  
+                  if (ruleAmount != null && 
+                      (tx.amount - ruleAmount).abs() < 0.01 && 
+                      ruleSender == otherParty) {
+                    matchFound = true;
+                    break;
+                  }
+                }
+              } catch (_) {}
+            } else {
+              // Normal name alias
+              if (alias == otherParty) {
+                matchFound = true;
+                break;
+              }
+            }
+          }
+
+          if (matchFound) {
             tx.entityId = entity.id;
             break; 
+          }
+          
+          // 2. Legacy Amount Match (Low Priority)
+          // Only if no strict/name match found yet
+          if (entity.amountAliases.contains(tx.amount)) {
+            tx.entityId = entity.id;
+            break;
           }
         }
         await _dbService.addTransaction(tx);
@@ -295,22 +330,28 @@ class TransactionViewModel extends ChangeNotifier {
     await loadTransactions();
   }
 
-  Future<void> mapAmountToEntity(double amount, String entityId) async {
-    // 1. Find the entity
+
+
+  // Strict Auto-Map Rule: Amount + Sender
+  Future<void> addStrictAutoMapRule(double amount, String sender, String entityId) async {
     final entity = _entities.firstWhere((e) => e.id == entityId);
     
-    // 2. Add amount alias to entity if not exists
-    if (!entity.amountAliases.contains(amount)) {
-      entity.amountAliases.add(amount);
+    // Format: "rule:500.0:Rahul"
+    // Encode properly to avoid delimiter issues? Simple replace for now.
+    // Let's use a JSON-like structure but simple string is easier for Hive list.
+    // "rule:<amount>:<sender>"
+    final ruleString = "rule:$amount:$sender";
+
+    if (!entity.aliases.contains(ruleString)) {
+      entity.aliases.add(ruleString);
       await entity.save();
     }
     
-    // 3. Update all existing transactions with this amount
-    // (Only if they don't already have an entity assigned, or we can overwrite. 
-    //  Let's overwrite to be safe, or maybe check if current entity is null?
-    //  User said "track this amount", implies strong rule.)
+    // Retro-active Application
     final relevantTxs = _transactions.where((tx) => 
-      tx.amount == amount && (tx.entityId == null || tx.entityId!.isEmpty)
+      tx.amount == amount && 
+      (tx.isCredit ? tx.sender : tx.receiver) == sender &&
+      (tx.entityId == null || tx.entityId!.isEmpty)
     );
     
     for (var tx in relevantTxs) {
@@ -320,6 +361,12 @@ class TransactionViewModel extends ChangeNotifier {
     
     notifyListeners();
   }
+  
+  // Retro-fitted mapAmount logic (Redirect to Strict if sender provided? No, keep separate for now if needed, but user wants strict)
+  // Deprecating loose amount mapping in favor of strict or manual.
+  // Actually, let's keep it but maybe unused. 
+  // I will replace mapAmountToEntity with a version that defaults sender to * if not provided?
+  // But for now, let's just stick to adding the new method.
 
   Future<void> mapSenderToEntity(String senderName, String entityId) async {
     // 1. Find the entity
