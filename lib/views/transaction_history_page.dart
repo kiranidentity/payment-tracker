@@ -412,29 +412,44 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   }
 
   Widget _buildMonthSelector(TransactionViewModel viewModel) {
-    // ... existing month selector code ...
     final date = DateTime(viewModel.selectedYear, viewModel.selectedMonth);
+    
     return Container(
-      // ...
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            offset: const Offset(0, 2),
+            blurRadius: 4,
+          )
+        ],
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           IconButton(
             icon: const Icon(Icons.chevron_left),
             onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null,
+            tooltip: 'Previous Month',
             style: IconButton.styleFrom(
               backgroundColor: Colors.grey.shade100,
-              disabledBackgroundColor: Colors.grey.shade50, // Lighter when disabled
+              disabledBackgroundColor: Colors.grey.shade50,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
             ),
           ),
+          
           Text(
             DateFormat('MMMM yyyy').format(date),
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
           ),
+          
           IconButton(
             icon: const Icon(Icons.chevron_right),
             onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
+            tooltip: 'Next Month',
             style: IconButton.styleFrom(
               backgroundColor: Colors.grey.shade100,
               disabledBackgroundColor: Colors.grey.shade50,
