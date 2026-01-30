@@ -63,11 +63,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
       ),
       body: Consumer<TransactionViewModel>(
         builder: (context, viewModel, child) {
-          if (viewModel.transactions.isEmpty) {
-             return const Center(child: Text('No transactions found for this month'));
-          }
-
-          // Filter Logic
+          
+          // Filter Logic (Always run filter even if empty, results will be empty)
           final filteredTransactions = viewModel.transactions.where((tx) {
             final query = _searchQuery.toLowerCase();
             if (query.isEmpty) return true;
