@@ -362,8 +362,8 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                       TextButton.icon(
-                        icon: const Icon(Icons.add_circle_outline, color: Color(0xFF6366F1), size: 18),
-                        label: const Text("Add Auto-Map Rule", style: TextStyle(color: Color(0xFF6366F1))),
+                        icon: const Icon(Icons.link, color: Color(0xFF6366F1), size: 18),
+                        label: const Text("Link Another Sender", style: TextStyle(color: Color(0xFF6366F1))),
                         onPressed: () => _showAddAmountDialog(context, viewModel, e),
                       ),
                       const SizedBox(width: 8),
@@ -383,6 +383,8 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
 
   Widget _buildAddEntitySection(TransactionViewModel viewModel) {
     final TextEditingController controller = TextEditingController();
+    final TextEditingController feeController = TextEditingController(); // NEW
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -392,25 +394,46 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
         ),
         const SizedBox(height: 8),
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
+              flex: 3,
               child: TextField(
                 controller: controller,
                 decoration: const InputDecoration(
                   labelText: 'Client Name (e.g., Rahul)',
                   border: OutlineInputBorder(),
                 ),
+                textCapitalization: TextCapitalization.words,
               ),
             ),
-            const SizedBox(width: 16),
-            ElevatedButton(
-              onPressed: () {
-                if (controller.text.isNotEmpty) {
-                  viewModel.addEntity(controller.text);
-                  controller.clear();
-                }
-              },
-              child: const Text('Add'),
+            const SizedBox(width: 12),
+            Expanded(
+              flex: 2,
+              child: TextField(
+                controller: feeController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Fee (₹)',
+                  hintText: 'Optional',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            SizedBox(
+              height: 56, // Match standard input height
+              child: ElevatedButton(
+                onPressed: () {
+                  if (controller.text.isNotEmpty) {
+                    double? limit = double.tryParse(feeController.text);
+                    viewModel.addEntity(controller.text, limit: limit);
+                    controller.clear();
+                    feeController.clear();
+                  }
+                },
+                child: const Text('Add'),
+              ),
             ),
           ],
         ),
@@ -579,13 +602,13 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Auto-Map Rule for ${entity.name}'),
+        title: Text('Link Another Sender to ${entity.name}'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Map future transactions automatically if they match BOTH the amount and sender name.',
+              'Link a specific Sender & Amount combination to this client (e.g. Spouse paying fees).',
               style: TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 16),

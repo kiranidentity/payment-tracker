@@ -617,22 +617,45 @@ class _HomePageState extends State<HomePage> {
 
   void _showAddStudentDialog(BuildContext context, TransactionViewModel viewModel, String senderName) {
     final controller = TextEditingController();
+    final feeController = TextEditingController(); // NEW
+    
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Client'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(labelText: 'Client Name', hintText: 'e.g. John Doe'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Client Name', hintText: 'e.g. John Doe'),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: feeController,
+              decoration: const InputDecoration(labelText: 'Monthly Fee (₹)', hintText: 'Optional'),
+              keyboardType: TextInputType.number,
+            ),
+          ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () async {
               if (controller.text.isNotEmpty) {
-                 await viewModel.addEntity(controller.text);
+                 double? fee = double.tryParse(feeController.text);
+                 await viewModel.addEntity(controller.text, limit: fee);
+                 
                  final newEntity = viewModel.entities.firstWhere((e) => e.name == controller.text);
                  await viewModel.mapSenderToEntity(senderName, newEntity.id);
+                 
+                 // If fee was provided, we should probably treat this mapping as a Strict Rule too?
+                 // Let's call the helper if fee exists
+                 if (fee != null && fee > 0) {
+                   await viewModel.addStrictAutoMapRule(fee, senderName, newEntity.id);
+                 }
+
                  if (context.mounted) Navigator.pop(context);
               }
             },

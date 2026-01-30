@@ -288,8 +288,14 @@ class TransactionViewModel extends ChangeNotifier {
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       name: name,
       monthlyLimit: limit,
-      aliases: [],
+      aliases: [], // We can't know aliases yet, mapping happens next
     );
+     // IF limit is provided, we should probably add it as a strict amount rule? 
+     // No, strict amount rules need a Sender Name. 
+     // But wait, if we are creating this from a specific Unmapped Sender (which is usually the case),
+     // we could pass that sender name too?
+     // For now, let's just stick to setting the Limit. The mapping logic usually follows immediately.
+     
     await _dbService.addEntity(newEntity);
     await loadTransactions(); // Refresh entities list
   }

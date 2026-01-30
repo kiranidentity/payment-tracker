@@ -393,6 +393,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                 // 3. Map the sender
                 await viewModel.mapSenderToEntity(senderName, newEntity.id);
                 
+                // 4. Strict rule if fee is provided
+                double? limit = double.tryParse(amountController.text);
+                if (limit != null && limit > 0) {
+                  await viewModel.addStrictAutoMapRule(limit, senderName, newEntity.id);
+                }
+
                 if (context.mounted) {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
