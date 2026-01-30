@@ -29,42 +29,11 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background, 
-      appBar: AppBar(
-        title: const Text('Transaction History'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.delete_forever),
-            tooltip: 'Clear All Data',
-            onPressed: () {
-               showDialog(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('Clear All Data?'),
-                  content: const Text('This will delete all transactions and cannot be undone.'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
-                    ),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      onPressed: () {
-                        Provider.of<TransactionViewModel>(context, listen: false).clearAll();
-                        Navigator.pop(context);
-                      },
-                      child: const Text('Clear All', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                ),
-              );
-            },
-          )
-        ],
-      ),
+      // Remove AppBar, we will build a custom header in the body
       body: Consumer<TransactionViewModel>(
         builder: (context, viewModel, child) {
           
-          // Filter Logic (Always run filter even if empty, results will be empty)
+          // Filter Logic
           final filteredTransactions = viewModel.transactions.where((tx) {
             final query = _searchQuery.toLowerCase();
             if (query.isEmpty) return true;
@@ -83,11 +52,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
           return Column(
             children: [
-              _buildMonthSelector(viewModel),
+              // --- PREMIUM GRADIENT HEADER (Matches Dashboard) ---
+              _buildGradientHeader(context, viewModel),
               
               if (_showTip)
                 Container(
-                  margin: const EdgeInsets.all(8.0),
+                  margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade50,
@@ -118,13 +88,23 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
               // Search Bar
               Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    labelText: 'Search by Amount (e.g., 1500) or Name',
+                    labelText: 'Search by Amount or Name',
+                    hintText: 'e.g. 1500 or Swiggy',
                     prefixIcon: const Icon(Icons.search),
-                    border: const OutlineInputBorder(),
+                    filled: true,
+                    fillColor: Colors.white,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
                     suffixIcon: _searchQuery.isNotEmpty 
                       ? IconButton(
                           icon: const Icon(Icons.clear),
@@ -184,134 +164,137 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                       ),
                     )
                   : ListView.builder(
+                  padding: const EdgeInsets.only(bottom: 24),
                   itemCount: filteredTransactions.length,
                   itemBuilder: (context, index) {
                     final tx = filteredTransactions[index];
                     final otherParty = tx.isCredit ? tx.sender : tx.receiver;
 
-                    return ListTile(
-                      leading: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: tx.isCredit ? Colors.green.shade50 : Colors.red.shade50,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
-                          color: tx.isCredit ? Colors.green : Colors.red,
-                          size: 20,
-                        ),
+                    return Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.02),
+                            offset: const Offset(0, 2),
+                            blurRadius: 4,
+                          )
+                        ],
+                        border: Border.all(color: Colors.grey.shade100),
                       ),
+                      child: ListTile(
+                        leading: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: tx.isCredit ? const Color(0xFFDCFCE7) : const Color(0xFFFEE2E2), // Soft Green / Soft Red
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            tx.isCredit ? Icons.arrow_downward : Icons.arrow_upward,
+                            color: tx.isCredit ? const Color(0xFF166534) : const Color(0xFF991B1B), // Dark Green / Dark Red
+                            size: 20,
+                          ),
+                        ),
 
-                      title: Text(
-                        otherParty,
-                        maxLines: 1, 
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
-                      ),
-                      subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        title: Text(
+                          otherParty,
+                          maxLines: 1, 
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15, color: Color(0xFF1E293B)),
+                        ),
+                        subtitle: Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "${DateFormat('dd MMM, hh:mm a').format(tx.date)}\n${tx.description}",
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                              ),
+                              if (tx.entityId != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 6),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.link, size: 12, color: AppTheme.primary),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        "Mapped to: ${viewModel.getEntityName(tx.entityId)}",
+                                         style: const TextStyle(fontSize: 11, color: AppTheme.primary, fontWeight: FontWeight.bold),
+                                      ),
+                                      if (tx.mappedAmount != null) ...[
+                                        const SizedBox(width: 8),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                                          decoration: BoxDecoration(
+                                            color: Colors.orange.shade50,
+                                            borderRadius: BorderRadius.circular(4),
+                                            border: Border.all(color: Colors.orange.shade200, width: 0.5),
+                                          ),
+                                          child: Text(
+                                            "Fee: ₹${tx.mappedAmount!.toStringAsFixed(0)}",
+                                            style: TextStyle(fontSize: 10, color: Colors.orange.shade800, fontWeight: FontWeight.bold),
+                                          ),
+                                        )
+                                      ]
+                                    ],
+                                  ),
+                                )
+                            ],
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Text(
-                              "${DateFormat('dd MMM, hh:mm a').format(tx.date)}\n${tx.description}",
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                              "₹${tx.amount.toStringAsFixed(0)}",
+                              style: TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                color: tx.isCredit ? const Color(0xFF166534) : const Color(0xFF1E293B),
+                              ),
                             ),
-                            if (tx.entityId != null)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Row(
-                                  children: [
-                                    const Icon(Icons.link, size: 12, color: Colors.indigo),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      "Mapped to: ${viewModel.getEntityName(tx.entityId)}",
-                                       style: const TextStyle(fontSize: 12, color: Colors.indigo, fontWeight: FontWeight.bold),
+                            PopupMenuButton<String>(
+                              icon: const Icon(Icons.more_vert, size: 20, color: Colors.grey),
+                              onSelected: (value) async {
+                                if (value == 'map_to_student') {
+                                  _showCreateStudentDialog(context, viewModel, tx.isCredit ? tx.sender : tx.receiver, tx.amount);
+                                } else if (value == 'unmap') {
+                                   await viewModel.unmapTransaction(tx);
+                                   if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Transaction Unmapped")));
+                                   }
+                                } else if (value == 'edit_fee') {
+                                   _showEditFeeDialog(context, viewModel, tx);
+                                }
+                              },
+                              itemBuilder: (BuildContext context) {
+                                return [
+                                  if (tx.entityId == null && tx.isCredit)
+                                    const PopupMenuItem<String>(
+                                      value: 'map_to_student',
+                                      child: Row(children: [Icon(Icons.person_add, size: 18), SizedBox(width: 8), Text('Create Client')]),
                                     ),
-                                    if (tx.mappedAmount != null) ...[
-                                      const SizedBox(width: 8),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange.shade100,
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          "Fee: ₹${tx.mappedAmount!.toStringAsFixed(0)}",
-                                          style: TextStyle(fontSize: 10, color: Colors.orange.shade800, fontWeight: FontWeight.bold),
-                                        ),
-                                      )
-                                    ]
-                                  ],
-                                ),
-                              )
+                                  
+                                  if (tx.entityId != null) ...[
+                                     const PopupMenuItem<String>(
+                                      value: 'unmap',
+                                      child: Row(children: [Icon(Icons.link_off, size: 18), SizedBox(width: 8), Text('Unmap / Not Fee')]),
+                                    ),
+                                    const PopupMenuItem<String>(
+                                      value: 'edit_fee',
+                                      child: Row(children: [Icon(Icons.edit, size: 18), SizedBox(width: 8), Text('Edit Fee Amount')]),
+                                    ),
+                                  ]
+                                ];
+                              },
+                            ),
                           ],
                         ),
-                      ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            '${tx.isCredit ? "+" : "-"} ₹${tx.amount.toStringAsFixed(2)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: tx.isCredit ? Colors.green : Colors.red,
-                            ),
-                          ),
-                          PopupMenuButton<String>(
-
-                            itemBuilder: (context) => [
-                              if (tx.entityId == null)
-                                const PopupMenuItem(
-                                  value: 'create_student',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.person_add, size: 20),
-                                      SizedBox(width: 8),
-                                      Text('Create Student'),
-                                    ],
-                                  ),
-                                ),
-                              if (tx.entityId != null)
-                                const PopupMenuItem(
-                                  value: 'unmap',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.link_off, size: 20, color: Colors.orange),
-                                      SizedBox(width: 8),
-                                      Text('Unmap / Not Fee'),
-                                    ],
-                                  ),
-                                ),
-                              if (tx.entityId != null)
-                                const PopupMenuItem(
-                                  value: 'edit_fee',
-                                  child: Row(
-                                    children: [
-                                      Icon(Icons.edit, size: 20, color: Colors.blue),
-                                      SizedBox(width: 8),
-                                      Text('Edit Fee Amount'),
-                                    ],
-                                  ),
-                                ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'create_student') {
-                                _showCreateStudentDialog(context, viewModel, otherParty);
-                              } else if (value == 'unmap') {
-                                viewModel.unmapTransaction(tx);
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Transaction unmapped')),
-                                );
-                              } else if (value == 'edit_fee') {
-                                _showEditFeeDialog(context, viewModel, tx);
-                              }
-                            },
-                          ),
-                        ],
                       ),
                     );
                   },
@@ -324,9 +307,110 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     );
   }
 
-  void _showCreateStudentDialog(BuildContext context, TransactionViewModel viewModel, String senderName) {
+  Widget _buildGradientHeader(BuildContext context, TransactionViewModel viewModel) {
+    final date = DateTime(viewModel.selectedYear, viewModel.selectedMonth);
+    // Adaptive top padding
+    final topPadding = MediaQuery.of(context).padding.top + 16;
+
+    return Container(
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: AppTheme.primaryDark,
+        gradient: LinearGradient(
+          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
+          begin: Alignment.bottomLeft,
+          end: Alignment.topRight,
+        ),
+        borderRadius: BorderRadius.only(
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
+        ),
+      ),
+      padding: EdgeInsets.fromLTRB(20, topPadding, 20, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // AppBar-like Row
+          Row(
+            children: [
+              IconButton( // Back Button
+                onPressed: () => Navigator.pop(context),
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+              ),
+              const SizedBox(width: 16),
+              const Expanded(
+                child: Text(
+                  'Transaction History',
+                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+                ),
+              ),
+              IconButton( // Delete Action
+                icon: const Icon(Icons.delete_forever, color: Colors.white70),
+                tooltip: 'Clear All Data',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                onPressed: () {
+                   showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text('Clear All Data?'),
+                      content: const Text('This will delete all transactions and cannot be undone.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                          onPressed: () {
+                            Provider.of<TransactionViewModel>(context, listen: false).clearAll();
+                            Navigator.pop(context);
+                          },
+                          child: const Text('Clear All', style: TextStyle(color: Colors.white)),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              )
+            ],
+          ),
+          
+          const SizedBox(height: 24),
+          
+          // Month Selector (White/Transparent Style on Dark BG)
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null, 
+                icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
+                tooltip: 'Previous Month',
+              ),
+              const SizedBox(width: 16),
+              Text(
+                DateFormat('MMMM yyyy').format(date),
+                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 0.5),
+              ),
+              const SizedBox(width: 16),
+              IconButton(
+                onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
+                icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 28),
+                tooltip: 'Next Month',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
+  void _showCreateStudentDialog(BuildContext context, TransactionViewModel viewModel, String senderName, double transactionAmount) {
     final nameController = TextEditingController();
-    final amountController = TextEditingController();
+    final amountController = TextEditingController(text: transactionAmount.toStringAsFixed(0));
 
     showDialog(
       context: context,

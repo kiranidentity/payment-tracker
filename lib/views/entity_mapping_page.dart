@@ -27,12 +27,15 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
           length: 3,
           child: Scaffold(
             appBar: AppBar(
-              title: const Text('Manage Clients'),
+              title: const Text('Manage Clients', style: TextStyle(color: Colors.white)),
+              backgroundColor: AppTheme.primary, // Unified Primary Color
               elevation: 0,
+              iconTheme: const IconThemeData(color: Colors.white),
               bottom: TabBar(
-                labelColor: AppTheme.primary,
-                unselectedLabelColor: AppTheme.textSub,
-                indicatorColor: AppTheme.primary,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                indicatorColor: Colors.white,
+                indicatorWeight: 3,
                 tabs: [
                   const Tab(text: 'My Clients'),
                   Tab(
@@ -45,7 +48,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.redAccent,
+                              color: Colors.white24, // Subtle badge background
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
