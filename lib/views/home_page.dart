@@ -50,10 +50,18 @@ class _HomePageState extends State<HomePage> {
           }).toList();
 
           final unmappedNames = viewModel.getUnmappedNames();
-          final hasTransactions = viewModel.transactions.isNotEmpty || viewModel.importLogs.isNotEmpty;
-
-          // STATE 1: ZERO STATE (Brand new user, no data)
-          if (!hasTransactions && entities.isEmpty) {
+          
+          // Use the raw full transaction list from the viewmodel to determine if the user has ANY data.
+          // We check _transactions indirectly by looking at whether unmappedNames exists OR if any mapping already exists.
+          // Better yet, let's expose a simple hasData getter in ViewModel or check viewModel.importLogs.
+          // For now, let's use the most reliable signal: Are there any transactions or logs?
+          
+          // FIX: Use viewModel.allTransactionsCount if available, or just check viewmodel internal state via unmappedNames
+          // Actually, let's just use importLogs as a "first time" check, but if we cleared everything, we should go back to zero.
+          final hasAnyTransactions = unmappedNames.isNotEmpty || viewModel.entities.isNotEmpty || viewModel.transactions.isNotEmpty;
+          
+          // STATE 1: ZERO STATE (Brand new user OR data was cleared)
+          if (!hasAnyTransactions && viewModel.entities.isEmpty) {
              return _buildZeroState(context, viewModel);
           }
           
@@ -63,7 +71,7 @@ class _HomePageState extends State<HomePage> {
           // But "All items processed" might be confusing if user expects Dashboard.
           
           // STATE 2: SETUP STATE (Only if NO entities AND has transactions)
-          if (entities.isEmpty && hasTransactions) {
+          if (entities.isEmpty && hasAnyTransactions) {
              return _buildSetupState(context, viewModel, unmappedNames, entities);
           }
 

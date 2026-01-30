@@ -18,13 +18,10 @@ class _HelpPageState extends State<HelpPage> {
     return Scaffold(
       backgroundColor: AppTheme.background,
       appBar: AppBar(
-        title: const Text('Help Center'),
-        backgroundColor: Colors.white,
+        title: const Text('Help Center', style: TextStyle(color: Colors.white)),
+        backgroundColor: AppTheme.primary,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppTheme.textMain),
-          onPressed: () => Navigator.pop(context),
-        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         controller: _scrollController,
