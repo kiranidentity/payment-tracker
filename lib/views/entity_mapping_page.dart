@@ -38,7 +38,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text('Inbox'),
+                        const Text('Unmapped'),
                         if (inboxCount > 0) ...[
                           const SizedBox(width: 8),
                           Container(
@@ -83,7 +83,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       )
                     else ...[
                       const Text(
-                        'Mapped Clients',
+                        'All Clients',
                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 12),

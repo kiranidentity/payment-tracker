@@ -163,7 +163,10 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                           Text(
                             _searchQuery.isNotEmpty 
                                 ? 'No results found for "$_searchQuery"'
-                                : 'No transactions in ${DateFormat('MMMM').format(DateTime(viewModel.selectedYear, viewModel.selectedMonth))}',
+                                : (viewModel.selectedMonth == DateTime.now().month && viewModel.selectedYear == DateTime.now().year)
+                                    ? "No transactions uploaded for the current month."
+                                    : 'No transactions in ${DateFormat('MMMM').format(DateTime(viewModel.selectedYear, viewModel.selectedMonth))}',
+                            textAlign: TextAlign.center,
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -174,7 +177,9 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                             Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: Text(
-                                "Try checking a different month.",
+                                (viewModel.selectedMonth == DateTime.now().month && viewModel.selectedYear == DateTime.now().year)
+                                    ? "Did you upload a statement for this month?"
+                                    : "Try checking a different month.",
                                 style: TextStyle(color: Colors.grey.shade500),
                               ),
                             ),
