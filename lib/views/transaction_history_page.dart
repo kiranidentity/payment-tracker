@@ -150,7 +150,37 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
               Expanded(
                 child: filteredTransactions.isEmpty 
-                  ? const Center(child: Text('No matching transactions'))
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            _searchQuery.isNotEmpty ? Icons.search_off : Icons.calendar_today_outlined,
+                            size: 48,
+                            color: Colors.grey.shade300,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            _searchQuery.isNotEmpty 
+                                ? 'No results found for "$_searchQuery"'
+                                : 'No transactions in ${DateFormat('MMMM').format(DateTime(viewModel.selectedYear, viewModel.selectedMonth))}',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          if (_searchQuery.isEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                "Try checking a different month.",
+                                style: TextStyle(color: Colors.grey.shade500),
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
                   : ListView.builder(
                   itemCount: filteredTransactions.length,
                   itemBuilder: (context, index) {

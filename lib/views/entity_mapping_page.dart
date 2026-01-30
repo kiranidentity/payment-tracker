@@ -29,9 +29,9 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               title: const Text('Manage Clients'),
               elevation: 0,
               bottom: TabBar(
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white70,
-                indicatorColor: Colors.white,
+                labelColor: AppTheme.primary,
+                unselectedLabelColor: AppTheme.textSub,
+                indicatorColor: AppTheme.primary,
                 tabs: [
                   const Tab(text: 'My Clients'),
                   Tab(
