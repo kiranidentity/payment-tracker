@@ -297,7 +297,74 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       SnackBar(content: Text('Ignored "$unmappedName"')),
                     );
                   } else {
-                    viewModel.mapSenderToEntity(unmappedName, actionId);
+                    final entity = entities.firstWhere((e) => e.id == actionId);
+                    
+                    // Smart Check: Does this transaction amount match the expected fee?
+                    // We grab the LATEST transaction amount for this sender to check.
+                    // relatedTxs is already sorted (newest first).
+                    final latestTx = relatedTxs.firstOrNull;
+                    final txAmount = latestTx?.amount ?? 0.0;
+                    final expectedFee = entity.monthlyLimit;
+
+                    if (expectedFee != null && (txAmount - expectedFee).abs() > 0.01) {
+                      // CONFLICT: Received Amount != Fee
+                      showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Amount Mismatch"),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("You are mapping '$unmappedName' to '${entity.name}'."),
+                              const SizedBox(height: 12),
+                              Text("• Received: ₹${txAmount.toStringAsFixed(0)}"),
+                              Text("• Expected Fee: ₹${expectedFee.toStringAsFixed(0)}"),
+                              const SizedBox(height: 16),
+                              const Text("Do you want to update the Monthly Fee to match this new amount?"),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                // Option 1: Just Map (One-off surplus/shortage)
+                                viewModel.mapSenderToEntity(unmappedName, actionId);
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Mapped "$unmappedName" to ${entity.name}')),
+                                );
+                              },
+                              child: const Text("No, Keep Previous Fee"),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                // Option 2: Update Fee & Add Rule
+                                viewModel.updateClientFee(entity.id, txAmount);
+                                viewModel.addStrictAutoMapRule(txAmount, unmappedName, entity.id);
+                                viewModel.mapSenderToEntity(unmappedName, actionId); // Ensure name is also mapped
+                                Navigator.pop(context);
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Updated Fee to ₹${txAmount.toStringAsFixed(0)} & Mapped "$unmappedName"')),
+                                );
+                              },
+                              child: const Text("Yes, Update Fee & Rule"),
+                            ),
+                          ],
+                        ),
+                      );
+                    } else {
+                      // No Conflict or No Fee Set
+                      // If No Fee Set -> Ask to set it (Implicitly "Yes" to update fee)
+                      if (expectedFee == null) {
+                         viewModel.updateClientFee(entity.id, txAmount);
+                         viewModel.addStrictAutoMapRule(txAmount, unmappedName, entity.id);
+                      }
+                      
+                      viewModel.mapSenderToEntity(unmappedName, actionId);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Mapped "$unmappedName" to ${entity.name}')),
+                      );
+                    }
                   }
                 },
                 itemBuilder: (context) {
