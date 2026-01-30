@@ -56,14 +56,29 @@ class _HomePageState extends State<HomePage> {
           if (!hasTransactions && entities.isEmpty) {
              return _buildZeroState(context, viewModel);
           }
-
-          // STATE 2: SETUP STATE (No entities yet)
-          // Setup state code...
+          
+          // Bug Fix: If transactions are deleted but entities exist, show Dashboard (State 3)
+          // The previous logic for Setup State was:
+          // if (entities.isEmpty && hasTransactions) -> Setup
+          // But "All items processed" might be confusing if user expects Dashboard.
+          
+          // STATE 2: SETUP STATE (Only if NO entities AND has transactions)
           if (entities.isEmpty && hasTransactions) {
              return _buildSetupState(context, viewModel, unmappedNames, entities);
           }
 
-          // STATE 3: NORMAL DASHBOARD
+          // STATE 3: NORMAL DASHBOARD (Entities exist OR empty but we want to show dashboard layout)
+          // Actually if entities exist, we ALWAYS show dashboard.
+          if (entities.isNotEmpty) {
+             // Fallthrough to Dashboard
+          } else {
+             // If we are here: entities empty, hasTransactions is false? 
+             // Logic check:
+             // !hasTx && noEntity -> Zero (Handled)
+             // hasTx && noEntity -> Setup (Handled)
+             // !hasTx && Entity -> Dashboard (Handled by Fallthrough)
+             // hasTx && Entity -> Dashboard (Handled by Fallthrough)
+          }
           return Column(
             children: [
               // DARK GRADIENT HEADER (Replaces Summary Card + Month Selector)
@@ -497,6 +512,11 @@ class _HomePageState extends State<HomePage> {
           const SizedBox(height: 40),
           ...unmappedNames.map((name) => _buildMappingTile(context, viewModel, name, entities, isSetupMode: true)),
           
+          
+          // Only show "All items processed" if we actually have transactions but no unmapped names
+          // (i.e., imports happened, but everything is ignored or mapped, yet still in setup state because no entities?)
+          // Actually, if we are in Setup state, entities is empty.
+          // If no unmapped names, it means all transactions are ignored.
           if (unmappedNames.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: 40),
