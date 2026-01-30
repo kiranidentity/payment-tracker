@@ -599,4 +599,27 @@ class TransactionViewModel extends ChangeNotifier {
     
     return allNames.difference(mappedNames).toList()..sort();
   }
+
+  // Get list of Ignored Senders
+  List<String> getIgnoredSenders() {
+    // We only care about ignored names that actually appear in the current transaction list
+    // akin to how getUnmappedNames works.
+    final Set<String> ignoredInCurrentView = {};
+    for (var tx in _transactions) {
+      if (!tx.isCredit) continue;
+      if (_ignoredAliases.contains(tx.sender)) {
+        ignoredInCurrentView.add(tx.sender);
+      }
+    }
+    return ignoredInCurrentView.toList()..sort();
+  }
+
+  // Un-ignore a sender (Restore to Inbox)
+  Future<void> unignoreSender(String senderName) async {
+    if (_ignoredAliases.contains(senderName)) {
+      _ignoredAliases.remove(senderName);
+      await _dbService.saveIgnoredAliases(_ignoredAliases);
+      notifyListeners();
+    }
+  }
 }

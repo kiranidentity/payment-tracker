@@ -501,9 +501,12 @@ class _HomePageState extends State<HomePage> {
               Padding(
                 padding: const EdgeInsets.only(top: 40),
                 child: Center(
-                  child: ElevatedButton(
-                    onPressed: () { /* Just waiting for redraw */ }, 
-                    child: const Text("Go to Dashboard")
+                  child: Column(
+                     children: const [
+                        Icon(Icons.check_circle, color: Colors.green, size: 60),
+                        SizedBox(height: 16),
+                        Text("All items processed!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                     ],
                   ),
                 ),
               ),

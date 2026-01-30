@@ -19,11 +19,12 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
     return Consumer<TransactionViewModel>(
       builder: (context, viewModel, child) {
         final unmappedNames = viewModel.getUnmappedNames();
+        final ignoredNames = viewModel.getIgnoredSenders();
         final entities = viewModel.entities;
         final inboxCount = unmappedNames.length;
 
         return DefaultTabController(
-          length: 2,
+          length: 3,
           child: Scaffold(
             appBar: AppBar(
               title: const Text('Manage Clients'),
@@ -56,6 +57,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       ],
                     ),
                   ),
+                  const Tab(text: 'Ignored'),
                 ],
               ),
             ),
@@ -140,6 +142,68 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                       ),
                       const SizedBox(height: 16),
                       ...unmappedNames.map((name) => _buildMappingTile(context, viewModel, name, entities)),
+                    ]
+                  ],
+                ),
+                
+                // TAB 3: Ignored (Restore)
+                ListView(
+                  padding: const EdgeInsets.all(16.0),
+                  children: [
+                    if (ignoredNames.isEmpty)
+                       Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 60),
+                          child: Column(
+                            children: [
+                              Icon(Icons.visibility_off_outlined, size: 60, color: Colors.grey.shade300),
+                              const SizedBox(height: 16),
+                              const Text(
+                                "No Ignored Senders",
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.grey),
+                              ),
+                              const SizedBox(height: 8),
+                              const Text(
+                                "Senders you ignore will appear here.",
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    else ...[
+                      const Text(
+                        "Ignored Senders",
+                         style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        child: Text(
+                          "These senders are hidden from the Unmapped list. Restore them if you want to map them.",
+                          style: TextStyle(color: Colors.grey),
+                        ),
+                      ),
+                      ...ignoredNames.map((name) => Container(
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: ListTile(
+                          title: Text(name, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.grey)),
+                          trailing: TextButton.icon(
+                            icon: const Icon(Icons.restore, size: 18),
+                            label: const Text("Un-ignore"),
+                            onPressed: () {
+                              viewModel.unignoreSender(name);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Restored "$name" to Unmapped list')),
+                              );
+                            },
+                          ),
+                        ),
+                      )),
                     ]
                   ],
                 ),
