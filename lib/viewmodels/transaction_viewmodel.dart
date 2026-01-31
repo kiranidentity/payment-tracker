@@ -264,7 +264,6 @@ class TransactionViewModel extends ChangeNotifier {
   }
 
   // NEW: Helper to get recent transactions for ANY specific name (from full history)
-  // This fixes the issue where unmapped list showed no amounts if tx was in different month
   List<TransactionModel> getRecentTransactionsForName(String name) {
     return getAllTransactionsForName(name)
         .take(5) // Take last 5
@@ -274,8 +273,43 @@ class TransactionViewModel extends ChangeNotifier {
   // Get ALL transactions for a specific name (for History Dialog)
   List<TransactionModel> getAllTransactionsForName(String name) {
     return _transactions
-        .where((tx) => tx.isCredit && tx.sender == name)
+        .where((tx) => tx.isCredit && tx.cleanSender == name)
         .toList(); // Already sorted by date in loadTransactions
+  }
+
+  /// Returns a list of unique names (senders/receivers) that are NOT yet mapped to an entity
+  List<String> getUnmappedNames() {
+    final Set<String> mappedNames = {};
+    for (var e in _entities) {
+      mappedNames.addAll(e.aliases);
+    }
+    
+    final Set<String> allNames = {};
+    for (var tx in _transactions) {
+      if (!tx.isCredit) continue; // Strictly Money In
+      final name = tx.cleanSender; 
+      
+      // Skip if Ignored
+      if (_ignoredAliases.contains(name)) continue;
+
+      allNames.add(name);
+    }
+    
+    return allNames.difference(mappedNames).toList()..sort();
+  }
+
+  // Get list of Ignored Senders
+  List<String> getIgnoredSenders() {
+    // We only care about ignored names that actually appear in the current transaction list
+    // akin to how getUnmappedNames works.
+    final Set<String> ignoredInCurrentView = {};
+    for (var tx in _transactions) {
+      if (!tx.isCredit) continue;
+      if (_ignoredAliases.contains(tx.cleanSender)) {
+        ignoredInCurrentView.add(tx.cleanSender);
+      }
+    }
+    return ignoredInCurrentView.toList()..sort();
   }
 
   List<ImportLogModel> get importLogs => _importLogs;
@@ -620,40 +654,7 @@ class TransactionViewModel extends ChangeNotifier {
     await loadTransactions(); // Refresh
   }
 
-  /// Returns a list of unique names (senders/receivers) that are NOT yet mapped to an entity
-  List<String> getUnmappedNames() {
-    final Set<String> mappedNames = {};
-    for (var e in _entities) {
-      mappedNames.addAll(e.aliases);
-    }
-    
-    final Set<String> allNames = {};
-    for (var tx in _transactions) {
-      if (!tx.isCredit) continue; // Strictly Money In
-      final name = tx.sender; 
-      
-      // Skip if Ignored
-      if (_ignoredAliases.contains(name)) continue;
 
-      allNames.add(name);
-    }
-    
-    return allNames.difference(mappedNames).toList()..sort();
-  }
-
-  // Get list of Ignored Senders
-  List<String> getIgnoredSenders() {
-    // We only care about ignored names that actually appear in the current transaction list
-    // akin to how getUnmappedNames works.
-    final Set<String> ignoredInCurrentView = {};
-    for (var tx in _transactions) {
-      if (!tx.isCredit) continue;
-      if (_ignoredAliases.contains(tx.sender)) {
-        ignoredInCurrentView.add(tx.sender);
-      }
-    }
-    return ignoredInCurrentView.toList()..sort();
-  }
 
   // Un-ignore a sender (Restore to Inbox)
   Future<void> unignoreSender(String senderName) async {

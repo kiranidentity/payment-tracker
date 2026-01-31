@@ -42,4 +42,8 @@ class TransactionModel extends HiveObject {
     this.entityId,
     this.mappedAmount,
   });
+
+  // Helper to sanitize names (remove newlines and extra spaces) for display
+  String get cleanSender => sender.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+  String get cleanReceiver => receiver.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
 }

@@ -168,7 +168,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
                   itemCount: filteredTransactions.length,
                   itemBuilder: (context, index) {
                     final tx = filteredTransactions[index];
-                    final otherParty = tx.isCredit ? tx.sender : tx.receiver;
+                    final otherParty = tx.isCredit ? tx.cleanSender : tx.cleanReceiver;
 
                     return Container(
                       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
