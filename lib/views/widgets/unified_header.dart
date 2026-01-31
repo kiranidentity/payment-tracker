@@ -47,9 +47,29 @@ class UnifiedGradientHeader extends StatelessWidget {
              Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Payment Tracker',
-                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.white.withOpacity(0.1)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.pie_chart_outline, color: Colors.white.withOpacity(0.9), size: 14),
+                      const SizedBox(width: 6),
+                      const Text(
+                        'PAYMENT TRACKER',
+                        style: TextStyle(
+                          color: Colors.white, 
+                          fontSize: 10, 
+                          fontWeight: FontWeight.bold, 
+                          letterSpacing: 1.0
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 if (trailing != null) trailing!,
               ],
