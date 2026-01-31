@@ -9,6 +9,7 @@ import 'entity_mapping_page.dart';
 import 'transaction_history_page.dart';
 import 'widgets/unified_header.dart'; // Unified Layout
 import 'widgets/month_navigation_header.dart';
+import 'widgets/contextual_help_button.dart';
 import 'help_page.dart'; // NEW
 
 class HomePage extends StatefulWidget {
@@ -571,6 +572,12 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
                 Icon(Icons.chevron_right, color: Colors.amber.shade900, size: 18),
+                const SizedBox(width: 8),
+                ContextualHelpButton(
+                  title: "Unmapped Senders",
+                  content: "These are payments from people we don't recognize yet. Tap to link them to a client profile.",
+                  iconColor: Colors.amber.shade700,
+                ),
               ],
             ),
           ),

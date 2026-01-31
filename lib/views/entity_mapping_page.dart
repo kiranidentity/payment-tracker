@@ -5,6 +5,7 @@ import '../models/entity_model.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import 'widgets/unified_header.dart';
+import 'widgets/contextual_help_button.dart';
 
 
 class EntityMappingPage extends StatefulWidget {
@@ -271,7 +272,16 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Text('Monthly Fee: ${e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'Not Set'}'),
+                Row(
+                  children: [
+                    Text('Monthly Fee: ${e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'Not Set'}'),
+                    const SizedBox(width: 8),
+                    const ContextualHelpButton(
+                      title: "Monthly Fee",
+                      content: "This is the expected amount for this client. We use this to calculate the 'Paid' status and progress bar.",
+                    ),
+                  ],
+                ),
                 if (e.aliases.isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Row(

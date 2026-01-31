@@ -67,6 +67,17 @@ class _HelpPageState extends State<HelpPage> {
             _buildFaqItem('What if a client pays from a different name?', 'No problem! You can map multiple "Sender Names" (Aliases) to the same Client Profile.'),
             _buildFaqItem('Can I delete a client?', 'Yes. Long press or swipe on a client in the list to delete them.'),
              _buildFaqItem('I upgraded my phone. How do I transfer data?', 'Currently, data is strictly on-device. We are working on a Backup feature.'),
+             
+             const SizedBox(height: 32),
+
+             // 5. Glossary
+             _buildSectionTitle('Glossary'),
+             const SizedBox(height: 16),
+             _buildGlossaryItem('Entity / Client', 'A person or student who pays you (e.g. "Rahul").'),
+             _buildGlossaryItem('Sender Name', 'The name that appears on your bank statement.'),
+             _buildGlossaryItem('Mapping', 'Linking a "Sender Name" to a "Client" so future payments are auto-recognized.'),
+             _buildGlossaryItem('Unmapped', 'A payment from a sender we do not recognize yet.'),
+             _buildGlossaryItem('Alias', 'An alternate name for a client (e.g. if Rahul pays from "Rahul Father" account).'),
           ],
         ),
       ),
@@ -193,6 +204,37 @@ class _HelpPageState extends State<HelpPage> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildGlossaryItem(String term, String definition) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            margin: const EdgeInsets.only(top: 8, right: 12),
+            decoration: const BoxDecoration(
+              color: AppTheme.accent,
+              shape: BoxShape.circle,
+            ),
+          ),
+          Expanded(
+            child: RichText(
+              text: TextSpan(
+                style: const TextStyle(color: AppTheme.textSub, height: 1.4),
+                children: [
+                  TextSpan(text: '$term: ', style: const TextStyle(fontWeight: FontWeight.bold, color: AppTheme.textMain)),
+                  TextSpan(text: definition),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
