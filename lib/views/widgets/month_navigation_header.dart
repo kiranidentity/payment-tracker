@@ -20,10 +20,7 @@ class MonthNavigationHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween, // Spread to edges or center? HomePage was center.
-      // Actually, standardizing on Centered for Title, but if we want it to look like a control bar, maybe spread is better?
-      // User liked HomePage better implicitly. Let's stick to Centered Row for now, 
-      // but let's make it look premium.
+      // Standardizing on Centered for consistent UI
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         _buildNavButton(
