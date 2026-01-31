@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import '../viewmodels/transaction_viewmodel.dart';
 import '../models/transaction_model.dart';
 import '../theme/app_theme.dart';
+import 'widgets/unified_header.dart';
 
 
 
@@ -311,94 +312,67 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
   Widget _buildGradientHeader(BuildContext context, TransactionViewModel viewModel) {
     final date = DateTime(viewModel.selectedYear, viewModel.selectedMonth);
-    // Adaptive top padding
-    final topPadding = MediaQuery.of(context).padding.top + 16;
 
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppTheme.primaryDark,
-        gradient: LinearGradient(
-          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)],
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-        ),
-      ),
-      padding: EdgeInsets.fromLTRB(20, topPadding, 20, 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // AppBar-like Row
-          Row(
-            children: [
-
-              const Expanded(
-                child: Text(
-                  'Transaction History',
-                  style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+    return UnifiedGradientHeader(
+      title: 'Transaction History',
+      showBrand: true, // Brand is now visible
+      trailing: IconButton( // Delete Action
+        icon: const Icon(Icons.delete_forever, color: Colors.white70),
+        tooltip: 'Clear All Data',
+        onPressed: () {
+           showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: const Text('Clear All Data?'),
+              content: const Text('This will delete all transactions and mappings from the database. This action cannot be undone.'),
+              actions: [
+                TextButton(child: const Text('Cancel'), onPressed: () => Navigator.pop(context)),
+                TextButton(
+                  child: const Text('Delete All', style: TextStyle(color: Colors.red)),
+                  onPressed: () async {
+                    await viewModel.clearAllData();
+                    if (context.mounted) Navigator.pop(context);
+                  },
                 ),
-              ),
-              IconButton( // Delete Action
-                icon: const Icon(Icons.delete_forever, color: Colors.white70),
-                tooltip: 'Clear All Data',
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                onPressed: () {
-                   showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Clear All Data?'),
-                      content: const Text('This will delete all transactions and cannot be undone.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('Cancel'),
-                        ),
-                        ElevatedButton(
-                          style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                          onPressed: () {
-                            Provider.of<TransactionViewModel>(context, listen: false).clearAll();
-                            Navigator.pop(context);
-                          },
-                          child: const Text('Clear All', style: TextStyle(color: Colors.white)),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              )
-            ],
-          ),
-          
-          const SizedBox(height: 24),
-          
-          // Month Selector (White/Transparent Style on Dark BG)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null, 
-                icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
-                tooltip: 'Previous Month',
-              ),
-              const SizedBox(width: 16),
-              Text(
-                DateFormat('MMMM yyyy').format(date),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 0.5),
-              ),
-              const SizedBox(width: 16),
-              IconButton(
-                onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
-                icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 28),
-                tooltip: 'Next Month',
-              ),
-            ],
-          ),
-        ],
+              ],
+            ),
+           );
+        },
+      ),
+      bottomContent: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+             BoxShadow(
+               color: Colors.black.withOpacity(0.03),
+               offset: const Offset(0, 2),
+               blurRadius: 4,
+             )
+           ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.chevron_left, color: Colors.white), // Consistent White
+              onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null,
+              tooltip: 'Previous Month',
+            ),
+            
+            Text(
+              DateFormat('MMMM yyyy').format(date),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+            ),
+            
+            IconButton(
+              icon: const Icon(Icons.chevron_right, color: Colors.white), // Consistent White
+              onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
+              tooltip: 'Next Month',
+            ),
+          ],
+        ),
       ),
     );
   }

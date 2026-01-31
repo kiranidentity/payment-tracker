@@ -664,4 +664,14 @@ class TransactionViewModel extends ChangeNotifier {
       notifyListeners();
     }
   }
+
+  // Clear ALL Data (Nuclear Option)
+  Future<void> clearAllData() async {
+    await _dbService.clearAll();
+    _transactions.clear();
+    _entities.clear();
+    _importLogs.clear();
+    _ignoredAliases.clear();
+    notifyListeners();
+  }
 }

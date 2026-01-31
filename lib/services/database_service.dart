@@ -110,4 +110,15 @@ class DatabaseService {
     final box = Hive.box(settingsBoxName);
     await box.put('seen_intro', false);
   }
+  Future<void> clearAll() async {
+    await _transactionBox!.clear();
+    await _entityBox!.clear();
+    await Hive.box<ImportLogModel>(importLogBoxName).clear();
+    
+    // Clear settings but maybe keep 'seen_intro'? 
+    // For 'Nuclear' delete, usually we want to keep app config like 'seen_intro'.
+    // So let's just clear ignored aliases.
+    final settingsBox = Hive.box(settingsBoxName);
+    await settingsBox.delete('ignored_aliases'); 
+  }
 }

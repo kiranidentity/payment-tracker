@@ -7,6 +7,7 @@ import '../models/entity_model.dart';
 import '../theme/app_theme.dart';
 import 'entity_mapping_page.dart';
 import 'transaction_history_page.dart';
+import 'widgets/unified_header.dart'; // Unified Layout
 import 'help_page.dart'; // NEW
 
 class HomePage extends StatefulWidget {
@@ -104,8 +105,11 @@ class _HomePageState extends State<HomePage> {
           }
           return Column(
             children: [
-              // DARK GRADIENT HEADER (Replaces Summary Card + Month Selector)
+              // DARK GRADIENT HEADER
               _buildDarkHeader(context, viewModel),
+              
+              // NEW: Health Bar (Progress)
+              _buildHealthBar(context, viewModel.totalReceivedCurrentMonth, viewModel.totalExpectedMonthly),
               
               // NEW: Search Bar
               _buildSearchBar(),
@@ -177,7 +181,7 @@ class _HomePageState extends State<HomePage> {
   Widget _buildDarkHeader(BuildContext context, TransactionViewModel viewModel) {
     final date = DateTime(viewModel.selectedYear, viewModel.selectedMonth);
     
-    // Calculate total received
+    // Calculate total received and pending logic
     double totalReceived = viewModel.totalReceivedCurrentMonth;
     int pendingCount = 0;
     for (var e in viewModel.entities) {
@@ -186,126 +190,43 @@ class _HomePageState extends State<HomePage> {
        if (received < expected) pendingCount++;
     }
 
-    // Adaptive top padding
-    final topPadding = MediaQuery.of(context).padding.top + 24;
-
-    return Container(
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        color: AppTheme.primaryDark, // Deep Indigo
-        gradient: LinearGradient(
-          colors: [Color(0xFF1E1B4B), Color(0xFF312E81)], // Deep 900 -> 800
-          begin: Alignment.bottomLeft,
-          end: Alignment.topRight,
-        ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+    return UnifiedGradientHeader(
+      title: 'Dashboard', // or 'Overview'
+      subtitle: '₹${totalReceived.toStringAsFixed(0)} Received • $pendingCount Pending',
+      showBrand: true,
+      trailing: InkWell(
+        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpPage())),
+        child: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
+          child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
         ),
       ),
-      padding: EdgeInsets.fromLTRB(24, topPadding, 24, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      bottomContent: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Row 1: App Title + Help Icon
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Payment Tracker',
-                style: TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w600),
-              ),
-              InkWell(
-                onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpPage())),
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
-                  child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
-                ),
-              ),
-            ],
+          IconButton(
+            onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null, 
+            icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
+            tooltip: 'Previous Month',
           ),
-          
-          const SizedBox(height: 20),
-          
-          // Row 2: CENTERED Month Selector (Prominent navigation)
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              IconButton(
-                onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null, 
-                icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
-                tooltip: 'Previous Month',
-              ),
-              const SizedBox(width: 16),
-              Text(
-                DateFormat('MMMM yyyy').format(date),
-                style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 0.5),
-              ),
-              const SizedBox(width: 16),
-              IconButton(
-                onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
-                icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 28),
-                tooltip: 'Next Month',
-              ),
-            ],
+          const SizedBox(width: 16),
+          Text(
+            DateFormat('MMMM yyyy').format(date),
+            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 0.5),
           ),
-
-          const SizedBox(height: 24),
-          
-          // Row 3: Total Amount (Centered)
-          Center(
-            child: Column(
-              children: [
-                const Text(
-                  'TOTAL COLLECTED',
-                  style: TextStyle(color: Colors.white38, fontSize: 11, fontWeight: FontWeight.w600, letterSpacing: 1.2),
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '₹${NumberFormat('#,##,##0').format(totalReceived)}',
-                      style: const TextStyle(
-                        color: Colors.white, 
-                        fontSize: 40, 
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: -1.0,
-                        height: 1.0,
-                      ),
-                    ),
-                    if (pendingCount > 0)
-                      Padding(
-                        padding: const EdgeInsets.only(left: 8, top: 4),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(4),
-                            border: Border.all(color: Colors.orange.withOpacity(0.5)),
-                          ),
-                          child: Text(
-                            '$pendingCount Due', 
-                            style: const TextStyle(color: Colors.orangeAccent, fontSize: 10, fontWeight: FontWeight.bold)
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-            ),
+          const SizedBox(width: 16),
+          IconButton(
+            onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
+            icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 28),
+            tooltip: 'Next Month',
           ),
-          
-          const SizedBox(height: 24),
-          
-          // Row 4: Health Bar
-          _buildHealthBar(context, totalReceived, viewModel.totalExpectedMonthly),
         ],
       ),
     );
   }
+
+
 
 
   // --- NEW LIST ROW DESIGN ---

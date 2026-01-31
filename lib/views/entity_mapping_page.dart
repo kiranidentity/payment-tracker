@@ -4,6 +4,7 @@ import '../viewmodels/transaction_viewmodel.dart';
 import '../models/entity_model.dart';
 import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
+import 'widgets/unified_header.dart';
 
 
 class EntityMappingPage extends StatefulWidget {
@@ -26,45 +27,48 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
         return DefaultTabController(
           length: 3,
           child: Scaffold(
-            appBar: AppBar(
-              title: const Text('Manage Clients', style: TextStyle(color: Colors.white)),
-              backgroundColor: AppTheme.primary, // Unified Primary Color
-              elevation: 0,
-              iconTheme: const IconThemeData(color: Colors.white),
-              bottom: TabBar(
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white70,
-                indicatorColor: Colors.white,
-                indicatorWeight: 3,
-                tabs: [
-                  const Tab(text: 'My Clients'),
-                  Tab(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Text('Unmapped'),
-                        if (inboxCount > 0) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white24, // Subtle badge background
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$inboxCount',
-                              style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ]
-                      ],
-                    ),
+            body: Column(
+              children: [
+                UnifiedGradientHeader(
+                  title: 'Manage Clients',
+                  showBrand: true,
+                  canGoBack: true,
+                  bottomContent: TabBar(
+                    labelColor: Colors.white,
+                    unselectedLabelColor: Colors.white60,
+                    indicatorColor: Colors.white,
+                    indicatorWeight: 3,
+                    labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                    tabs: [
+                      const Tab(text: 'My Clients'),
+                      Tab(
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('Unmapped'),
+                            if (inboxCount > 0) ...[
+                              const SizedBox(width: 8),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                decoration: BoxDecoration(
+                                  color: Colors.white24, // Subtle badge background
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Text(
+                                  '$inboxCount',
+                                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ]
+                          ],
+                        ),
+                      ),
+                      const Tab(text: 'Ignored'),
+                    ],
                   ),
-                  const Tab(text: 'Ignored'),
-                ],
-              ),
-            ),
-            body: TabBarView(
+                ),
+                Expanded(
+                  child: TabBarView(
               children: [
                 // TAB 1: Clients List
                 ListView(
@@ -230,15 +234,18 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                         ),
                       )),
                     ]
-                  ],
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
+                    ], // End List children
+                  ), // End ListView
+                ], // End TabBarView children
+              ), // End TabBarView
+            ), // End Expanded
+          ],
+        ),
+      ),
+    ); 
+  },
+ );
+}
 
   // Extracted Client Card Widget
   Widget _buildClientCard(BuildContext context, TransactionViewModel viewModel, EntityModel e) {

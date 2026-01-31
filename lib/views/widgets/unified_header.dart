@@ -1,28 +1,28 @@
 import 'package:flutter/material.dart';
 import '../../theme/app_theme.dart';
 
-class UnifiedHeader extends StatelessWidget {
+class UnifiedGradientHeader extends StatelessWidget {
   final String title;
   final String? subtitle;
-  final VoidCallback? onBackPressed;
-  final List<Widget>? actions;
+  final Widget? trailing;
   final Widget? bottomContent;
-  final double bottomPadding;
+  final bool showBrand;
+  final bool canGoBack;
 
-  const UnifiedHeader({
+  const UnifiedGradientHeader({
     super.key,
     required this.title,
     this.subtitle,
-    this.onBackPressed,
-    this.actions,
+    this.trailing,
     this.bottomContent,
-    this.bottomPadding = 32.0,
+    this.showBrand = true,
+    this.canGoBack = false,
   });
 
   @override
   Widget build(BuildContext context) {
     // Adaptive top padding
-    final topPadding = MediaQuery.of(context).padding.top + 24;
+    final topPadding = MediaQuery.of(context).padding.top + 16;
 
     return Container(
       width: double.infinity,
@@ -34,32 +34,41 @@ class UnifiedHeader extends StatelessWidget {
           end: Alignment.topRight,
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(32),
-          bottomRight: Radius.circular(32),
+          bottomLeft: Radius.circular(24),
+          bottomRight: Radius.circular(24),
         ),
       ),
-      padding: EdgeInsets.fromLTRB(24, topPadding, 24, bottomPadding),
+      padding: EdgeInsets.fromLTRB(24, topPadding, 24, 24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // BRAND ROW (Always Top)
+          if (showBrand) ...[
+             Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Payment Tracker',
+                  style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600, letterSpacing: 0.5),
+                ),
+                if (trailing != null) trailing!,
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+
+          // TITLE ROW
           Row(
             children: [
-              if (onBackPressed != null)
-                Padding(
-                  padding: const EdgeInsets.only(right: 16),
-                  child: InkWell(
-                    onTap: onBackPressed,
-                    borderRadius: BorderRadius.circular(12),
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1), 
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(Icons.arrow_back, color: Colors.white, size: 20),
-                    ),
-                  ),
+              if (canGoBack)
+                IconButton(
+                  onPressed: () => Navigator.pop(context),
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
+              if (canGoBack) const SizedBox(width: 12),
+              
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,34 +76,29 @@ class UnifiedHeader extends StatelessWidget {
                     Text(
                       title,
                       style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20, 
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        color: Colors.white, 
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 22, // Larger, prominent title
                       ),
                     ),
-                    if (subtitle != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          subtitle!,
-                          style: const TextStyle(
-                            color: Colors.white70, 
-                            fontSize: 13,
-                          ),
-                        ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        subtitle!,
+                        style: const TextStyle(color: Colors.white70, fontSize: 14),
                       ),
+                    ]
                   ],
                 ),
               ),
-              if (actions != null) ...actions!,
             ],
           ),
-          
+
+          // OPTIONAL BOTTOM CONTENT (e.g. Month Selector, Tabs placeholder, etc)
           if (bottomContent != null) ...[
-            const SizedBox(height: 24),
+            const SizedBox(height: 16),
             bottomContent!,
-          ],
+          ]
         ],
       ),
     );
