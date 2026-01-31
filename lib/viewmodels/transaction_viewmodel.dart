@@ -443,6 +443,20 @@ class TransactionViewModel extends ChangeNotifier {
       await tx.save(); 
     }
     
+    // NEW: Auto-switch to the month of the latest mapped transaction
+    // This solves the issue where users map a transaction from a past month 
+    // but don't see it reflected because the Dashboard is on the current month.
+    if (relevantTxs.isNotEmpty) {
+      // Sort to find latest
+      final sortedTxs = relevantTxs.toList()..sort((a, b) => b.date.compareTo(a.date));
+      final latestTx = sortedTxs.first;
+      
+      if (latestTx.date.month != _selectedMonth || latestTx.date.year != _selectedYear) {
+         _selectedMonth = latestTx.date.month;
+         _selectedYear = latestTx.date.year;
+      }
+    }
+    
     notifyListeners();
   }
 
