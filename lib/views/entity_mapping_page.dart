@@ -689,18 +689,6 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              ListTile(
-                leading: const Icon(Icons.visibility_off, color: Colors.grey, size: 20),
-                title: const Text('Ignore Sender', style: TextStyle(color: Colors.grey)),
-                onTap: () {
-                  viewModel.ignoreSender(unmappedName);
-                  Navigator.pop(context); // Close dialog
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Ignored "$unmappedName"')),
-                  );
-                },
-              ),
-              const Divider(),
               if (entities.isEmpty)
                 const ListTile(
                   title: Text('No students created yet'),
