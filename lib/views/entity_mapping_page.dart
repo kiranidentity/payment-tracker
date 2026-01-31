@@ -523,13 +523,13 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               onTap: () => _showSenderHistoryDialog(context, viewModel, unmappedName, entities),
               borderRadius: BorderRadius.circular(16),
               child: Padding(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
                 child: Row(
                   children: [
                     // Avatar
                     Container(
-                      width: 42, 
-                      height: 42,
+                      width: 40, 
+                      height: 40,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: Colors.grey.shade50,
@@ -541,7 +541,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     
                     // Name & Details (Expanded)
                     Expanded(
@@ -552,20 +552,20 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                             unmappedName, 
                             maxLines: 1, 
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                            style: const TextStyle(fontSize: 11, color: Colors.grey),
                           ),
                         ],
                       ),
                     ),
                     
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
 
                     // Actions
                     // Ignore Button (Compact Icon)
@@ -587,8 +587,12 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                         icon: const Icon(Icons.visibility_off_outlined, color: Colors.grey, size: 20),
                         tooltip: "Ignore Sender",
                         visualDensity: VisualDensity.compact,
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
                     ),
                     
+                    const SizedBox(width: 8),
+
                     // Map Button (Compact)
                     ElevatedButton(
                       onPressed: () => _showQuickMapMenu(context, viewModel, unmappedName, entities),
@@ -596,8 +600,9 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
-                        minimumSize: const Size(60, 32), // Compact height
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+                        minimumSize: const Size(0, 32), // Compact height and auto width
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
                       ),
                       child: const Text("Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
