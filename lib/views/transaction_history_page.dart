@@ -335,13 +335,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           // AppBar-like Row
           Row(
             children: [
-              IconButton( // Back Button
-                onPressed: () => Navigator.pop(context),
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-              ),
-              const SizedBox(width: 16),
+
               const Expanded(
                 child: Text(
                   'Transaction History',
