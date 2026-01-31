@@ -541,16 +541,43 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
-              trailing: ElevatedButton(
-                onPressed: () => _showQuickMapMenu(context, viewModel, unmappedName, entities),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppTheme.primary,
-                  foregroundColor: Colors.white,
-                  elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                ),
-                child: const Text("Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              trailing: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextButton(
+                    onPressed: () async {
+                      await viewModel.ignoreSender(unmappedName);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Ignored "$unmappedName"'),
+                            action: SnackBarAction(
+                              label: 'UNDO',
+                              onPressed: () => viewModel.unignoreSender(unmappedName),
+                            ),
+                          ),
+                        );
+                      }
+                    },
+                    style: TextButton.styleFrom(
+                      foregroundColor: Colors.grey,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    ),
+                    child: const Text("Ignore", style: TextStyle(fontSize: 12)),
+                  ),
+                  const SizedBox(width: 4),
+                  ElevatedButton(
+                    onPressed: () => _showQuickMapMenu(context, viewModel, unmappedName, entities),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    ),
+                    child: const Text("Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                  ),
+                ],
               ),
             ),
           );
