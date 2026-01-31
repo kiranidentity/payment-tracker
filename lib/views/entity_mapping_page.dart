@@ -32,7 +32,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 UnifiedGradientHeader(
                   title: 'Manage Clients',
                   showBrand: true,
-                  canGoBack: true,
+                  canGoBack: false,
                   bottomContent: TabBar(
                     labelColor: Colors.white,
                     unselectedLabelColor: Colors.white60,
