@@ -8,6 +8,7 @@ import '../theme/app_theme.dart';
 import 'entity_mapping_page.dart';
 import 'transaction_history_page.dart';
 import 'widgets/unified_header.dart'; // Unified Layout
+import 'widgets/month_navigation_header.dart';
 import 'help_page.dart'; // NEW
 
 class HomePage extends StatefulWidget {
@@ -202,26 +203,12 @@ class _HomePageState extends State<HomePage> {
           child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
         ),
       ),
-      bottomContent: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          IconButton(
-            onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null, 
-            icon: const Icon(Icons.chevron_left, color: Colors.white70, size: 28),
-            tooltip: 'Previous Month',
-          ),
-          const SizedBox(width: 16),
-          Text(
-            DateFormat('MMMM yyyy').format(date),
-            style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 20, letterSpacing: 0.5),
-          ),
-          const SizedBox(width: 16),
-          IconButton(
-            onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
-            icon: const Icon(Icons.chevron_right, color: Colors.white70, size: 28),
-            tooltip: 'Next Month',
-          ),
-        ],
+      bottomContent: MonthNavigationHeader(
+        currentDate: date,
+        canGoPrevious: viewModel.canGoPrevious,
+        canGoNext: viewModel.canGoNext,
+        onPrevious: viewModel.previousMonth,
+        onNext: viewModel.nextMonth,
       ),
     );
   }

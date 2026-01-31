@@ -5,6 +5,7 @@ import '../viewmodels/transaction_viewmodel.dart';
 import '../models/transaction_model.dart';
 import '../theme/app_theme.dart';
 import 'widgets/unified_header.dart';
+import 'widgets/month_navigation_header.dart';
 
 
 
@@ -339,40 +340,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
            );
         },
       ),
-      bottomContent: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-             BoxShadow(
-               color: Colors.black.withOpacity(0.03),
-               offset: const Offset(0, 2),
-               blurRadius: 4,
-             )
-           ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.chevron_left, color: Colors.white), // Consistent White
-              onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null,
-              tooltip: 'Previous Month',
-            ),
-            
-            Text(
-              DateFormat('MMMM yyyy').format(date),
-              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-            ),
-            
-            IconButton(
-              icon: const Icon(Icons.chevron_right, color: Colors.white), // Consistent White
-              onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
-              tooltip: 'Next Month',
-            ),
-          ],
-        ),
+      bottomContent: MonthNavigationHeader(
+        currentDate: date,
+        canGoPrevious: viewModel.canGoPrevious,
+        canGoNext: viewModel.canGoNext,
+        onPrevious: viewModel.previousMonth,
+        onNext: viewModel.nextMonth,
       ),
     );
   }

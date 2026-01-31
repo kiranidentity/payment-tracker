@@ -58,12 +58,12 @@ class UnifiedGradientHeader extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(Icons.pie_chart_outline, color: Colors.white.withOpacity(0.9), size: 14),
-                      const SizedBox(width: 6),
+                      const SizedBox(width: 8), // Increased spacing for better breathability
                       const Text(
                         'PAYMENT TRACKER',
                         style: TextStyle(
                           color: Colors.white, 
-                          fontSize: 10, 
+                          fontSize: 11, // Slightly larger
                           fontWeight: FontWeight.bold, 
                           letterSpacing: 1.0
                         ),
@@ -74,7 +74,7 @@ class UnifiedGradientHeader extends StatelessWidget {
                 if (trailing != null) trailing!,
               ],
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 12), // Reduced height slightly to connect with title
           ],
 
           // TITLE ROW
