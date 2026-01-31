@@ -549,7 +549,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            unmappedName, 
+                            unmappedName.replaceAll('\n', ' ').replaceAll(RegExp(r'\s+'), ' '), 
                             maxLines: 1, 
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)
