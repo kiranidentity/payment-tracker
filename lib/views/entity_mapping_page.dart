@@ -520,6 +520,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               border: Border.all(color: Colors.grey.shade100),
             ),
             child: ListTile(
+              onTap: () => _showSenderHistoryDialog(context, viewModel, unmappedName, entities),
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Container(
                 width: 48,
@@ -540,19 +541,115 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
               ),
-              trailing: PopupMenuButton<String>(
-                onSelected: (actionId) {
-                  if (actionId == '__ignore__') {
-                    viewModel.ignoreSender(unmappedName);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Ignored "$unmappedName"')),
-                    );
-                  } else {
-                    final entity = entities.firstWhere((e) => e.id == actionId);
-                    
+              trailing: ElevatedButton(
+                onPressed: () => _showQuickMapMenu(context, viewModel, unmappedName, entities),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.primary,
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                ),
+                child: const Text("Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          );
+  }
+
+  void _showSenderHistoryDialog(BuildContext context, TransactionViewModel viewModel, String senderName, List<EntityModel> entities) {
+    final allTxs = viewModel.getAllTransactionsForName(senderName);
+    final totalReceived = allTxs.fold(0.0, (sum, tx) => sum + tx.amount);
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(senderName, style: const TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text(
+              "Total Received: ₹${totalReceived.toStringAsFixed(0)}",
+              style: const TextStyle(fontSize: 14, color: AppTheme.primary),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.separated(
+            shrinkWrap: true,
+            itemCount: allTxs.length,
+            separatorBuilder: (context, index) => Divider(color: Colors.grey.shade100),
+            itemBuilder: (context, index) {
+              final tx = allTxs[index];
+              return ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.call_received, size: 16, color: Colors.green),
+                title: Text(
+                  "₹${tx.amount.toStringAsFixed(0)}",
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  DateFormat('dd MMM yyyy, hh:mm a').format(tx.date),
+                  style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                ),
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("Close"),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context); // Close history
+              _showQuickMapMenu(context, viewModel, senderName, entities); // Open map menu
+            },
+            child: const Text("Map to Client"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showQuickMapMenu(BuildContext context, TransactionViewModel viewModel, String unmappedName, List<EntityModel> entities) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Map "$unmappedName" to...'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.visibility_off, color: Colors.grey, size: 20),
+                title: const Text('Ignore Sender', style: TextStyle(color: Colors.grey)),
+                onTap: () {
+                  viewModel.ignoreSender(unmappedName);
+                  Navigator.pop(context); // Close dialog
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Ignored "$unmappedName"')),
+                  );
+                },
+              ),
+              const Divider(),
+              if (entities.isEmpty)
+                const ListTile(
+                  title: Text('No students created yet'),
+                  enabled: false,
+                )
+              else
+                ...entities.map((entity) => ListTile(
+                  title: Text(entity.name),
+                  onTap: () {
+                    Navigator.pop(context); // Close dialog
+
                     // Smart Check: Does this transaction amount match the expected fee?
                     // We grab the LATEST transaction amount for this sender to check.
-                    // relatedTxs is already sorted (newest first).
+                    final relatedTxs = viewModel.getRecentTransactionsForName(unmappedName);
                     final latestTx = relatedTxs.firstOrNull;
                     final txAmount = latestTx?.amount ?? 0.0;
                     final expectedFee = entity.monthlyLimit;
@@ -579,7 +676,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                             TextButton(
                               onPressed: () {
                                 // Option 1: Just Map (One-off surplus/shortage)
-                                viewModel.mapSenderToEntity(unmappedName, actionId);
+                                viewModel.mapSenderToEntity(unmappedName, entity.id);
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Mapped "$unmappedName" to ${entity.name}')),
@@ -592,7 +689,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                                 // Option 2: Update Fee & Add Rule
                                 viewModel.updateClientFee(entity.id, txAmount);
                                 viewModel.addStrictAutoMapRule(txAmount, unmappedName, entity.id);
-                                viewModel.mapSenderToEntity(unmappedName, actionId); // Ensure name is also mapped
+                                viewModel.mapSenderToEntity(unmappedName, entity.id); // Ensure name is also mapped
                                 Navigator.pop(context);
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(content: Text('Updated Fee to ₹${txAmount.toStringAsFixed(0)} & Mapped "$unmappedName"')),
@@ -611,62 +708,24 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                          viewModel.addStrictAutoMapRule(txAmount, unmappedName, entity.id);
                       }
                       
-                      viewModel.mapSenderToEntity(unmappedName, actionId);
+                      viewModel.mapSenderToEntity(unmappedName, entity.id);
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(content: Text('Mapped "$unmappedName" to ${entity.name}')),
                       );
                     }
-                  }
-                },
-                itemBuilder: (context) {
-                  final List<PopupMenuEntry<String>> items = [];
-                  
-                  // Option 1: Ignore
-                  items.add(
-                    const PopupMenuItem(
-                      value: '__ignore__',
-                      child: Row(
-                        children: [
-                           Icon(Icons.visibility_off, color: Colors.grey, size: 20),
-                           SizedBox(width: 8),
-                           Text('Ignore Sender', style: TextStyle(color: Colors.grey)),
-                        ],
-                      ),
-                    ),
-                  );
-                  items.add(const PopupMenuDivider());
-
-                  // Option 2: Entities
-                  if (entities.isEmpty) {
-                     items.add(const PopupMenuItem(enabled: false, child: Text('No students created yet')));
-                  } else {
-                     items.addAll(entities.map((e) => PopupMenuItem(
-                      value: e.id,
-                      child: Text(e.name),
-                    )));
-                  }
-                  
-                  return items;
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.indigo.shade50,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.indigo.shade100),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text('Map to', style: TextStyle(color: Colors.indigo.shade700, fontWeight: FontWeight.bold, fontSize: 12)),
-                      const SizedBox(width: 4),
-                      Icon(Icons.arrow_drop_down, color: Colors.indigo.shade700, size: 18),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          );
+                  },
+                )),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   void _showAddAmountDialog(BuildContext context, TransactionViewModel viewModel, EntityModel entity) {

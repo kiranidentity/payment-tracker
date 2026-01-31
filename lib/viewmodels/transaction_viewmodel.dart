@@ -266,10 +266,16 @@ class TransactionViewModel extends ChangeNotifier {
   // NEW: Helper to get recent transactions for ANY specific name (from full history)
   // This fixes the issue where unmapped list showed no amounts if tx was in different month
   List<TransactionModel> getRecentTransactionsForName(String name) {
-    return _transactions
-        .where((tx) => (tx.isCredit ? tx.sender : tx.receiver) == name)
+    return getAllTransactionsForName(name)
         .take(5) // Take last 5
         .toList();
+  }
+
+  // Get ALL transactions for a specific name (for History Dialog)
+  List<TransactionModel> getAllTransactionsForName(String name) {
+    return _transactions
+        .where((tx) => tx.isCredit && tx.sender == name)
+        .toList(); // Already sorted by date in loadTransactions
   }
 
   List<ImportLogModel> get importLogs => _importLogs;
