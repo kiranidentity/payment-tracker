@@ -519,70 +519,91 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               ],
               border: Border.all(color: Colors.grey.shade100),
             ),
-            child: ListTile(
+            child: InkWell(
               onTap: () => _showSenderHistoryDialog(context, viewModel, unmappedName, entities),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              leading: Container(
-                width: 48,
-                height: 48,
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.grey.shade200),
-                ),
-                child: Text(
-                  unmappedName.isNotEmpty ? unmappedName[0].toUpperCase() : '?',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
-                ),
-              ),
-              title: Text(
-                unmappedName, 
-                maxLines: 1, 
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(fontWeight: FontWeight.w600)
-              ),
-              subtitle: Text(
-                'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextButton(
-                    onPressed: () async {
-                      await viewModel.ignoreSender(unmappedName);
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('Ignored "$unmappedName"'),
-                            action: SnackBarAction(
-                              label: 'UNDO',
-                              onPressed: () => viewModel.unignoreSender(unmappedName),
-                            ),
+              borderRadius: BorderRadius.circular(16),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    // Avatar
+                    Container(
+                      width: 42, 
+                      height: 42,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Text(
+                        unmappedName.isNotEmpty ? unmappedName[0].toUpperCase() : '?',
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    
+                    // Name & Details (Expanded)
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            unmappedName, 
+                            maxLines: 1, 
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)
                           ),
-                        );
-                      }
-                    },
-                    style: TextButton.styleFrom(
-                      foregroundColor: Colors.grey,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          const SizedBox(height: 2),
+                          Text(
+                            'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Text("Ignore", style: TextStyle(fontSize: 12)),
-                  ),
-                  const SizedBox(width: 4),
-                  ElevatedButton(
-                    onPressed: () => _showQuickMapMenu(context, viewModel, unmappedName, entities),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppTheme.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    
+                    const SizedBox(width: 8),
+
+                    // Actions
+                    // Ignore Button (Compact Icon)
+                    IconButton(
+                        onPressed: () async {
+                          await viewModel.ignoreSender(unmappedName);
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Ignored "$unmappedName"'),
+                                action: SnackBarAction(
+                                  label: 'UNDO',
+                                  onPressed: () => viewModel.unignoreSender(unmappedName),
+                                ),
+                              ),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.visibility_off_outlined, color: Colors.grey, size: 20),
+                        tooltip: "Ignore Sender",
+                        visualDensity: VisualDensity.compact,
                     ),
-                    child: const Text("Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                  ),
-                ],
+                    
+                    // Map Button (Compact)
+                    ElevatedButton(
+                      onPressed: () => _showQuickMapMenu(context, viewModel, unmappedName, entities),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 0),
+                        minimumSize: const Size(60, 32), // Compact height
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                      ),
+                      child: const Text("Map", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
+                ),
               ),
             ),
           );
