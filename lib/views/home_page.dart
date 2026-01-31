@@ -454,71 +454,98 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildZeroState(BuildContext context, TransactionViewModel viewModel) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
-              child: const Icon(Icons.upload_file, size: 64, color: Colors.grey),
-            ),
-            const SizedBox(height: 24),
-            const Text('No Data Yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Import your statement to start tracking.', style: TextStyle(color: Colors.grey)),
-            const SizedBox(height: 32),
-            ElevatedButton.icon(
-              onPressed: () => _handleImport(context, viewModel),
-              icon: const Icon(Icons.upload_file),
-              label: const Text('Import PDF Statement'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+      return Column(
+        children: [
+          const UnifiedGradientHeader(
+            title: 'Welcome',
+            subtitle: 'Let\'s get started',
+            showBrand: true,
+          ),
+          Expanded(
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                   Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+                    child: const Icon(Icons.upload_file, size: 64, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 24),
+                  const Text('No Data Yet', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 8),
+                  const Text('Import your statement to start tracking.', style: TextStyle(color: Colors.grey)),
+                  const SizedBox(height: 32),
+                  ElevatedButton.icon(
+                    onPressed: () => _handleImport(context, viewModel),
+                    icon: const Icon(Icons.upload_file),
+                    label: const Text('Import PDF Statement'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.primary,
+                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                      shape: const StadiumBorder(),
+                    ),
+                  ),
+                ],
               ),
             ),
-          ],
-        ),
-    );
+          ),
+        ],
+      );
   }
 
   Widget _buildSetupState(BuildContext context, TransactionViewModel viewModel, List<String> unmappedNames, List<EntityModel> entities) {
-      return ListView(
-        padding: const EdgeInsets.all(24),
+      return Column(
         children: [
-          const SizedBox(height: 48),
-          const Text(
-            'Setup Required', 
-            style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppTheme.textMain),
-            textAlign: TextAlign.center,
+          const UnifiedGradientHeader(
+            title: 'Setup Required',
+            subtitle: 'Map your clients to start tracking',
+            showBrand: true,
           ),
-          const SizedBox(height: 12),
-          Text(
-            'We found ${unmappedNames.length} new people in your statement.\nMap them to clients to start tracking.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(color: AppTheme.textSub, fontSize: 16),
-          ),
-          const SizedBox(height: 40),
-          ...unmappedNames.map((name) => _buildMappingTile(context, viewModel, name, entities, isSetupMode: true)),
-          
-          
-          // Only show "All items processed" if we actually have transactions but no unmapped names
-          // (i.e., imports happened, but everything is ignored or mapped, yet still in setup state because no entities?)
-          // Actually, if we are in Setup state, entities is empty.
-          // If no unmapped names, it means all transactions are ignored.
-          if (unmappedNames.isEmpty)
-              Padding(
-                padding: const EdgeInsets.only(top: 40),
-                child: Center(
-                  child: Column(
-                     children: const [
-                        Icon(Icons.check_circle, color: Colors.green, size: 60),
-                        SizedBox(height: 16),
-                        Text("All items processed!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                     ],
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(24),
+              children: [
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.indigo.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.indigo.shade100),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.indigo.shade700),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Text(
+                          'We found ${unmappedNames.length} new people in your statement.\nMap them to clients now.',
+                          style: TextStyle(color: Colors.indigo.shade900, fontSize: 15),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-              ),
+                const SizedBox(height: 24),
+                ...unmappedNames.map((name) => _buildMappingTile(context, viewModel, name, entities, isSetupMode: true)),
+                
+                if (unmappedNames.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 40),
+                      child: Center(
+                        child: Column(
+                           children: const [
+                              Icon(Icons.check_circle, color: Colors.green, size: 60),
+                              SizedBox(height: 16),
+                              Text("All items processed!", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                           ],
+                        ),
+                      ),
+                    ),
+              ],
+            ),
+          ),
         ],
       );
   }
