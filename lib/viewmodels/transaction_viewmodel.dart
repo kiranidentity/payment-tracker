@@ -192,7 +192,7 @@ class TransactionViewModel extends ChangeNotifier {
               } catch (_) {}
             } else {
               // Normal name alias
-              if (alias == otherParty) {
+              if (alias == otherParty || alias == tx.cleanSender || alias == tx.cleanReceiver) {
                 matchFound = true;
                 break;
               }
@@ -404,7 +404,7 @@ class TransactionViewModel extends ChangeNotifier {
     // Retro-active Application
     final relevantTxs = _transactions.where((tx) => 
       tx.amount == amount && 
-      (tx.isCredit ? tx.sender : tx.receiver) == sender &&
+      (tx.isCredit ? tx.cleanSender : tx.cleanReceiver) == sender &&
       (tx.entityId == null || tx.entityId!.isEmpty)
     );
     
@@ -435,7 +435,7 @@ class TransactionViewModel extends ChangeNotifier {
     // 3. Update all existing transactions with this sender
     // We update _transactions list directly but we also need to save each modified transaction to DB
     final relevantTxs = _transactions.where((tx) => 
-      (tx.isCredit ? tx.sender : tx.receiver) == senderName
+      (tx.isCredit ? tx.cleanSender : tx.cleanReceiver) == senderName
     );
     
     for (var tx in relevantTxs) {
@@ -598,7 +598,7 @@ class TransactionViewModel extends ChangeNotifier {
     // 2. Unmap all corresponding transactions
     final affectedTxs = _transactions.where((tx) => 
       tx.entityId == entityId && 
-      tx.sender == alias // Unmap only transactions from this specific alias
+      (tx.isCredit ? tx.cleanSender : tx.cleanReceiver) == alias // Unmap only transactions from this specific alias
     ).toList();
 
     for (var tx in affectedTxs) {
