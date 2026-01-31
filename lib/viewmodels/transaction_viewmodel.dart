@@ -316,7 +316,8 @@ class TransactionViewModel extends ChangeNotifier {
   
   double get totalReceivedCurrentMonth {
     return transactions
-        .fold(0.0, (sum, item) => sum + item.amount);
+        .where((tx) => tx.entityId != null && tx.entityId!.isNotEmpty)
+        .fold(0.0, (sum, item) => sum + (item.mappedAmount ?? item.amount));
   }
   
   double getEntityTotal(String entityId) {
