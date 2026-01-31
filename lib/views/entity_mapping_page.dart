@@ -577,20 +577,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                     // Actions
                     // Ignore Button (Compact Icon)
                     IconButton(
-                        onPressed: () async {
-                          await viewModel.ignoreSender(unmappedName);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('Ignored "$unmappedName"'),
-                                action: SnackBarAction(
-                                  label: 'UNDO',
-                                  onPressed: () => viewModel.unignoreSender(unmappedName),
-                                ),
-                              ),
-                            );
-                          }
-                        },
+                        onPressed: () => _confirmIgnoreSender(context, viewModel, unmappedName),
                         icon: const Icon(Icons.visibility_off_outlined, color: Colors.grey, size: 20),
                         tooltip: "Ignore Sender",
                         visualDensity: VisualDensity.compact,
@@ -919,5 +906,44 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _confirmIgnoreSender(BuildContext context, TransactionViewModel viewModel, String name) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Ignore Sender?'),
+        content: Text('Transactions from "$name" will be hidden from the Unmapped list.\n\nYou can restore them later from the "Ignored" tab.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), // Cancel
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true), // Confirm
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey.shade700, 
+              foregroundColor: Colors.white // Ensure text is white
+            ),
+            child: const Text('Ignore'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await viewModel.ignoreSender(name);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ignored "$name"'),
+            action: SnackBarAction(
+              label: 'UNDO',
+              onPressed: () => viewModel.unignoreSender(name),
+            ),
+          ),
+        );
+      }
+    }
   }
 }
