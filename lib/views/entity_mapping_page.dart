@@ -536,7 +536,12 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF1E293B)),
                 ),
               ),
-              title: Text(unmappedName, style: const TextStyle(fontWeight: FontWeight.w600)),
+              title: Text(
+                unmappedName, 
+                maxLines: 1, 
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(fontWeight: FontWeight.w600)
+              ),
               subtitle: Text(
                 'Recent: $amountsStr${relatedTxs.length == 3 ? '...' : ''}',
                 style: const TextStyle(fontSize: 12, color: Colors.grey),
