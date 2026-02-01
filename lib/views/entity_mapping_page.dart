@@ -29,11 +29,20 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
         return DefaultTabController(
           length: 3,
           child: Scaffold(
-            appBar: const GlobalAppBar(),
+            backgroundColor: AppTheme.background,
+            // Removed GlobalAppBar for cleaner, immersive look
             body: Column(
               children: [
                 UnifiedGradientHeader(
                   title: 'Manage Clients',
+                  subtitle: "Map unmapped entities to clients",
+                  canGoBack: true,
+                  useSafePadding: true, // Immersive status bar
+                  trailing: IconButton(
+                    icon: const Icon(Icons.refresh, color: Colors.white),
+                    onPressed: _refreshData,
+                    tooltip: "Refresh Data",
+                  ),
                   bottomContent: TabBar(
                     labelColor: Colors.white,
                     unselectedLabelColor: Colors.white60,

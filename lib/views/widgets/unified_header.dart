@@ -7,6 +7,7 @@ class UnifiedGradientHeader extends StatelessWidget {
   final Widget? trailing;
   final Widget? bottomContent;
   final bool canGoBack;
+  final bool useSafePadding;
 
   const UnifiedGradientHeader({
     super.key,
@@ -15,11 +16,14 @@ class UnifiedGradientHeader extends StatelessWidget {
     this.trailing,
     this.bottomContent,
     this.canGoBack = false,
+    this.useSafePadding = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Standardize padding: No status bar offset (handled by AppBar), fixed 16px horizontal
+    // If useSafePadding is true, we add the system status bar height to the top padding.
+    final topPadding = 16.0 + (useSafePadding ? MediaQuery.of(context).padding.top : 0.0);
+
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -34,7 +38,7 @@ class UnifiedGradientHeader extends StatelessWidget {
           bottomRight: Radius.circular(24),
         ),
       ),
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), // Fixed padding
+      padding: EdgeInsets.fromLTRB(16, topPadding, 16, 24), // Dynamic top padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

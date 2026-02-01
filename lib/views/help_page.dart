@@ -19,12 +19,15 @@ class _HelpPageState extends State<HelpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: const GlobalAppBar(
-        leading: BackButton(color: Colors.white),
-      ),
       body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const UnifiedGradientHeader(title: 'Help Center'),
+          const UnifiedGradientHeader(
+            title: "Help & Support",
+            subtitle: "User guide and troubleshooting",
+            canGoBack: true,
+            useSafePadding: true, // Immersive status bar
+          ),
           Expanded(
             child: SingleChildScrollView(
               controller: _scrollController,

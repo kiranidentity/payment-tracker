@@ -31,21 +31,6 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: const GlobalAppBar(),
-      backgroundColor: AppTheme.background, 
-      body: Consumer<TransactionViewModel>(
-        builder: (context, viewModel, child) {
-          
-          // Filter Logic
-          final filteredTransactions = viewModel.transactions.where((tx) {
-            final query = _searchQuery.toLowerCase();
-            if (query.isEmpty) return true;
-            
-            final name = (tx.isCredit ? tx.sender : tx.receiver).toLowerCase();
-            final desc = tx.description.toLowerCase();
-            
-            bool amountMatch = false;
-            final searchNum = double.tryParse(query);
             if (searchNum != null) {
               amountMatch = (tx.amount - searchNum).abs() < 0.01;
             }
