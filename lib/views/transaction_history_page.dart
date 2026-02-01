@@ -31,11 +31,24 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: Consumer<TransactionViewModel>(
+        builder: (context, viewModel, child) {
+          
+          // Filter Logic
+          final filteredTransactions = viewModel.transactions.where((tx) {
+            final query = _searchQuery.toLowerCase();
+            if (query.isEmpty) return true;
+            
+            final name = (tx.isCredit ? tx.sender : tx.receiver).toLowerCase();
+            final desc = tx.description.toLowerCase();
+            
+            bool amountMatch = false;
+            final searchNum = double.tryParse(query);
             if (searchNum != null) {
               amountMatch = (tx.amount - searchNum).abs() < 0.01;
             }
-            
-            return amountMatch || name.contains(query) || desc.contains(query);
+
+            return name.contains(query) || desc.contains(query) || amountMatch;
           }).toList();
 
           return Column(
