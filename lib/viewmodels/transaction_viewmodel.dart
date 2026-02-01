@@ -349,6 +349,24 @@ class TransactionViewModel extends ChangeNotifier {
     await loadTransactions(); // Refresh entities list
   }
 
+  Future<void> updateEntity(String id, String newName, double? newLimit) async {
+    final entityIndex = _entities.indexWhere((e) => e.id == id);
+    if (entityIndex != -1) {
+      final oldEntity = _entities[entityIndex];
+      final updatedEntity = EntityModel(
+        id: oldEntity.id,
+        name: newName,
+        monthlyLimit: newLimit,
+        aliases: oldEntity.aliases,
+        amountAliases: oldEntity.amountAliases,
+      );
+      
+      // Updates in Hive (overwrites based on ID)
+      await _dbService.addEntity(updatedEntity); 
+      await loadTransactions();
+    }
+  }
+
 
 
   // Unified Method: Sets Monthly Limit AND attempts to set Amount Alias
