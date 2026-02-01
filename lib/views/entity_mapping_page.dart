@@ -6,7 +6,7 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import 'widgets/unified_header.dart';
 import 'widgets/contextual_help_button.dart';
-import 'widgets/global_app_bar.dart';
+// import 'widgets/global_app_bar.dart';
 
 
 class EntityMappingPage extends StatefulWidget {
