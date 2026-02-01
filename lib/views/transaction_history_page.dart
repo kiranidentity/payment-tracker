@@ -315,7 +315,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
     return UnifiedGradientHeader(
       title: 'Transaction History',
       subtitle: '${viewModel.transactions.length} transactions total',
-      canGoBack: true,
+      canGoBack: false,
       useSafePadding: true, // IMPORTANT: Immersive status bar
       trailing: IconButton( // Delete Action
         icon: const Icon(Icons.delete_forever, color: Colors.white70),

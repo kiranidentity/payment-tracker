@@ -40,7 +40,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 UnifiedGradientHeader(
                   title: 'Manage Clients',
                   subtitle: "Map unmapped entities to clients",
-                  canGoBack: true,
+                  canGoBack: false,
                   useSafePadding: true, // Immersive status bar
                   trailing: IconButton(
                     icon: const Icon(Icons.refresh, color: Colors.white),
