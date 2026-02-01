@@ -41,6 +41,7 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: const GlobalAppBar(),
       backgroundColor: AppTheme.background,
       body: Consumer<TransactionViewModel>(
         builder: (context, viewModel, child) {

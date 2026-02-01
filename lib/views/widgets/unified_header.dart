@@ -19,9 +19,7 @@ class UnifiedGradientHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Adaptive top padding
-    final topPadding = MediaQuery.of(context).padding.top + 16;
-
+    // Standardize padding: No status bar offset (handled by AppBar), fixed 16px horizontal
     return Container(
       width: double.infinity,
       decoration: const BoxDecoration(
@@ -36,7 +34,7 @@ class UnifiedGradientHeader extends StatelessWidget {
           bottomRight: Radius.circular(24),
         ),
       ),
-      padding: EdgeInsets.fromLTRB(24, topPadding, 24, 24),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 24), // Fixed padding
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
