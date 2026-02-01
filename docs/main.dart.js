@@ -107648,7 +107648,7 @@ M(a){var s=null,r=A.b([new A.AL(new A.yG(new A.ah5(),s,s,A.b5T(),A.b4D(),t.uF),s
 $.a5i()
 return A.aYA(new A.Db(t.PG.a($.mr().l3("settings",!1,t.z)).Em(0,"seen_intro",!1)?B.wL:B.KT,"Payment Tracker",q,s),r)}}
 A.ah5.prototype={
-$1(a){return new A.hl($.a5i(),new A.ait(A.cj("(Paid\\s+to|Received\\s+from)\\s+(.*?)\\s+UPI\\s+Transaction\\s+ID:\\s+(\\d+)\\s+(Paid\\s+by|Paid\\s+to)\\s+(.*?)\\s+\u20b9([\\d,]+)\\s+(\\d{2}\\s+[A-Za-z]{3},\\s+\\d{4}\\s+\\d{2}:\\d{2}\\s+[AP]M)",!1,!0,!1)),A.b([],t.PW),A.b([],t.tp),A.b([],t.s),A.b([],t.w0),A.dD(new A.cF(Date.now(),0,!1)),A.eM(new A.cF(Date.now(),0,!1)),$.aA())},
+$1(a){return new A.hl($.a5i(),new A.ait(A.cj("(Paid\\s+to|Received\\s+from)\\s+((?:(?!UPI\\s+Transaction).)*?)\\s+UPI\\s+Transaction\\s+ID:\\s+(\\d+)\\s+(Paid\\s+by|Paid\\s+to)\\s+((?:(?!\u20b9|Paid\\s+to|Received\\s+from).)*?)\\s+\u20b9\\s*([\\d,]+)\\s+(\\d{1,2}\\s+[A-Za-z]{3},\\s+\\d{4}\\s+\\d{2}:\\d{2}\\s+[AP]M)",!1,!0,!1)),A.b([],t.PW),A.b([],t.tp),A.b([],t.s),A.b([],t.w0),A.dD(new A.cF(Date.now(),0,!1)),A.eM(new A.cF(Date.now(),0,!1)),$.aA())},
 $S:578}
 A.h7.prototype={}
 A.OF.prototype={
@@ -108321,7 +108321,7 @@ n=a1
 m=B.c.ez(A.bq(q,"\n"," "))
 a1=r.toLowerCase()
 l=A.ed(a1,"received",0)
-k=A.or("dd MMM, yyyy hh:mm a")
+k=A.or("d MMM, yyyy hh:mm a")
 a1=A.cj("\\s+",!0,!1,!1)
 j=B.c.ez(A.bq(n,a1," "))
 A.a5g("DEBUG: Parsing date: '"+A.o(j)+"'")

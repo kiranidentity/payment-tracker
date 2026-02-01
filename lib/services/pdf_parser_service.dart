@@ -11,8 +11,18 @@ class PdfParserService {
   // Paid by...
   // ₹[Amount]
   // [Date]
+  // Revised Regex to handle:
+  // 1. Single digit days (e.g. "8 Jan" vs "08 Jan")
+  // 2. Prevent "Name" capture from eating into next transaction (Negative Lookahead)
+  // 3. Ensure "Date" capture is flexible with whitespace
   final RegExp _transactionRegex = RegExp(
-    r'(Paid\s+to|Received\s+from)\s+(.*?)\s+UPI\s+Transaction\s+ID:\s+(\d+)\s+(Paid\s+by|Paid\s+to)\s+(.*?)\s+₹([\d,]+)\s+(\d{2}\s+[A-Za-z]{3},\s+\d{4}\s+\d{2}:\d{2}\s+[AP]M)',
+    r'(Paid\s+to|Received\s+from)\s+' // Group 1: Type
+    r'((?:(?!UPI\s+Transaction).)*?)\s+' // Group 2: Name (Stop at UPI ID)
+    r'UPI\s+Transaction\s+ID:\s+(\d+)\s+' // Group 3: ID
+    r'(Paid\s+by|Paid\s+to)\s+' // Group 4: Type 2
+    r'((?:(?!₹|Paid\s+to|Received\s+from).)*?)\s+' // Group 5: Name 2 (Stop at ₹ or Next Start)
+    r'₹\s*([\d,]+)\s+' // Group 6: Amount (Allow space after ₹)
+    r'(\d{1,2}\s+[A-Za-z]{3},\s+\d{4}\s+\d{2}:\d{2}\s+[AP]M)', // Group 7: Date (1-2 digits for day)
     dotAll: true,
     caseSensitive: false,
   );
@@ -79,7 +89,8 @@ class PdfParserService {
 
         // Parse Date: "09 Oct, 2025 01:06 PM"
         // Parse Date: "09 Oct, 2025 01:06 PM"
-        final dateFormat = DateFormat("dd MMM, yyyy hh:mm a");
+        // Parse Date: "9 Jan, 2026 08:41 PM" or "09 Jan..."
+        final dateFormat = DateFormat("d MMM, yyyy hh:mm a");
         final cleanDateStr = dateStr.replaceAll(RegExp(r'\s+'), ' ').trim();
         print("DEBUG: Parsing date: '$cleanDateStr'");
         
