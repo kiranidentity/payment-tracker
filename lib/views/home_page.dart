@@ -439,7 +439,6 @@ class _HomePageState extends State<HomePage> {
           const UnifiedGradientHeader(
             title: 'Welcome',
             subtitle: 'Let\'s get started',
-            showBrand: true,
           ),
           Expanded(
             child: Center(
@@ -480,7 +479,6 @@ class _HomePageState extends State<HomePage> {
           const UnifiedGradientHeader(
             title: 'Setup Required',
             subtitle: 'Map your clients to start tracking',
-            showBrand: true,
           ),
           Expanded(
             child: ListView(
