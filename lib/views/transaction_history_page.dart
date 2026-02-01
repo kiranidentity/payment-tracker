@@ -5,10 +5,8 @@ import '../viewmodels/transaction_viewmodel.dart';
 import '../models/transaction_model.dart';
 import '../theme/app_theme.dart';
 import 'widgets/unified_header.dart';
+// import 'widgets/global_app_bar.dart'; // Removed for immersive look
 import 'widgets/month_navigation_header.dart';
-import 'widgets/global_app_bar.dart';
-
-
 
 class TransactionHistoryPage extends StatefulWidget {
   const TransactionHistoryPage({super.key});
@@ -20,7 +18,7 @@ class TransactionHistoryPage extends StatefulWidget {
 class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-  bool _showTip = true; // Temporary state, later could persist in Hive
+  bool _showTip = true; 
 
   @override
   void dispose() {
@@ -31,6 +29,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.background,
+      // No AppBar -> Immersive Header
       body: Consumer<TransactionViewModel>(
         builder: (context, viewModel, child) {
           
@@ -311,10 +311,12 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   }
 
   Widget _buildGradientHeader(BuildContext context, TransactionViewModel viewModel) {
-    final date = DateTime(viewModel.selectedYear, viewModel.selectedMonth);
-
+    // Standardize Header
     return UnifiedGradientHeader(
       title: 'Transaction History',
+      subtitle: '${viewModel.transactions.length} transactions total',
+      canGoBack: true,
+      useSafePadding: true, // IMPORTANT: Immersive status bar
       trailing: IconButton( // Delete Action
         icon: const Icon(Icons.delete_forever, color: Colors.white70),
         tooltip: 'Clear All Data',
@@ -339,7 +341,7 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
         },
       ),
       bottomContent: MonthNavigationHeader(
-        currentDate: date,
+        currentDate: DateTime(viewModel.selectedYear, viewModel.selectedMonth),
         canGoPrevious: viewModel.canGoPrevious,
         canGoNext: viewModel.canGoNext,
         onPrevious: viewModel.previousMonth,
@@ -397,25 +399,15 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
           ElevatedButton(
             onPressed: () async {
               if (nameController.text.isNotEmpty) {
-                // 1. Create Student
                 await viewModel.addEntity(
                   nameController.text, 
                   limit: double.tryParse(amountController.text)
                 );
                 
-                // 2. Get the new Entity ID (it was just added, so it's the last one? 
-                //    Better to find it by name or ensure addEntity returns it.
-                //    For now, let's find by name as names should be unique enough for this user context,
-                //    or just refactor addEntity. Refactoring is safer.)
-                
-                // Converting addEntity to return ID would be best, but for quick fix:
-                // Let's find the entity we just created.
                 final newEntity = viewModel.entities.firstWhere((e) => e.name == nameController.text);
                 
-                // 3. Map the sender
                 await viewModel.mapSenderToEntity(senderName, newEntity.id);
                 
-                // 4. Strict rule if fee is provided
                 double? limit = double.tryParse(amountController.text);
                 if (limit != null && limit > 0) {
                   await viewModel.addStrictAutoMapRule(limit, senderName, newEntity.id);
@@ -430,56 +422,6 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
               }
             },
             child: const Text('Create & Map'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMonthSelector(TransactionViewModel viewModel) {
-    final date = DateTime(viewModel.selectedYear, viewModel.selectedMonth);
-    
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            offset: const Offset(0, 2),
-            blurRadius: 4,
-          )
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: viewModel.canGoPrevious ? viewModel.previousMonth : null,
-            tooltip: 'Previous Month',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.shade100,
-              disabledBackgroundColor: Colors.grey.shade50,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-          ),
-          
-          Text(
-            DateFormat('MMMM yyyy').format(date),
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-          ),
-          
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: viewModel.canGoNext ? viewModel.nextMonth : null,
-            tooltip: 'Next Month',
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.grey.shade100,
-              disabledBackgroundColor: Colors.grey.shade50,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
           ),
         ],
       ),
