@@ -71,92 +71,78 @@ class PdfParserService {
       return [];
     }
 
-    // Regexes for looking INSIDE a chunk
-    // 1. ID: The first sequence of digits in the chunk.
+    // Regexes
     final idRegex = RegExp(r'(\d+)');
-    
-    // 2. Amount: (₹|Rs|INR) ... digits
     final amountRegex = RegExp(r'(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{2})?)', caseSensitive: false);
     
-    // 3. Date: Flexible (1-2 digits, 3 chars Month, 4 digits Year)
-    final dateRegex = RegExp(r'(\d{1,2}[\s\-\/]+[A-Za-z]{3}[\s\-\/]+\d{4}\s+\d{2}:\d{2}\s+[AP]M)');
+    // Date: 09\nOct,\n2025 ...
+    // Needs to handle newlines between parts.
+    final dateRegex = RegExp(r'(\d{1,2})[\s\-\/\n]+([A-Za-z]{3})[\s\-\/,\n]+(\d{4})[\s\n]+(\d{2}:\d{2}[\s\n]+[AP]M)');
+    
+    // Name: Paid to\nRahul
+    final nameRegex = RegExp(r'(Paid\s+to|Received\s+from)[\s\n]+([A-Za-z0-9\s\.\-\&\@]+)', caseSensitive: false);
 
-    // 4. Name: Look at the TAIL of the PREVIOUS chunk.
-    //    Find the LAST "Paid to/Received from" + Name.
-    final namePattern = RegExp(r'(Paid\s+to|Received\s+from)\s+([A-Za-z0-9\s\.\-\&\@]+)', caseSensitive: false);
-
-    // We start at i=1. Chunk 0 is the prologue (before first ID).
-    // chunks[i] contains ID, Amount, Date for Tx[i].
-    // chunks[i-1] contains the Name for Tx[i] (at its end).
     for (int i = 1; i < chunks.length; i++) {
        try {
-         final currentChunk = chunks[i]; // No trim yet, keep raw for safety
+         final currentChunk = chunks[i]; 
          final previousChunk = chunks[i-1];
 
-         // --- 1. ID ---
-         // ID must be at the very start of the chunk.
-         // But allow some noise just in case.
-         // Take the first 50 chars to look for ID.
+         // --- 1. ID (Current Chunk Head) ---
          final chunkHead = currentChunk.length > 50 ? currentChunk.substring(0, 50) : currentChunk;
          final idMatch = idRegex.firstMatch(chunkHead);
-         if (idMatch == null) {
-            print("Skipping Chunk $i: No ID found in head.");
-            continue;
-         }
+         if (idMatch == null) continue;
          final txId = idMatch.group(1)!;
 
-         // --- 2. AMOUNT ---
-         // Search mostly in the first half of the chunk to avoid confusion with footer?
-         // Usually amount is near the top.
+         // --- 2. AMOUNT (Current Chunk Head/Body) ---
+         // Amount comes after ID.
          final amountMatch = amountRegex.firstMatch(currentChunk);
          if (amountMatch == null) {
-            print("Skipping Tx $txId: Amount not found. Chunk len: ${currentChunk.length}");
+            print("Skipping Tx $txId: Amount not found.");
             continue;
          }
-         final amountStr = amountMatch.group(1)!.replaceAll(',', '');
+         final amountStr = amountMatch.group(1)!.replaceAll(RegExp(r'[\n\r\s,]'), ''); // Remove newlines/commas
 
-         // --- 3. DATE ---
-         final dateMatch = dateRegex.firstMatch(currentChunk);
-         if (dateMatch == null) {
-            print("Skipping Tx $txId: Date not found.");
-            continue;
-         }
-         final dateStr = dateMatch.group(1)!;
-
-         // --- 4. NAME (from Previous) ---
-         // Look at the last 500 chars of previous chunk
-         final prevTail = previousChunk.length > 500 
-            ? previousChunk.substring(previousChunk.length - 500) 
+         // --- 3. NAME (Previous Chunk Tail) ---
+         // Logic: The name is immediately before the "UPI Transaction ID" split.
+         // Look at the last portion of prev chunk.
+         final prevTail = previousChunk.length > 600 
+            ? previousChunk.substring(previousChunk.length - 600) 
             : previousChunk;
-         
-         final nameMatches = namePattern.allMatches(prevTail);
-         
-         String typeStr = "Paid to"; 
-         String nameRaw = "Unknown";
-         
-         if (nameMatches.isNotEmpty) {
-            // Check matches to find the one closest to the end (The "Active" one)
-            // But usually the last one is correct because "Paid to" precedes the ID.
-            final lastMatch = nameMatches.last;
-            typeStr = lastMatch.group(1)!;
-            nameRaw = lastMatch.group(2)!;
-         } 
+            
+         final nameMatches = nameRegex.allMatches(prevTail);
+         if (nameMatches.isEmpty) {
+             print("Skipping Tx $txId: Name pattern not found in prev chunk.");
+             continue;
+         }
+         // The matches are in order. The one relating to *this* ID is the LAST one in the chunk.
+         final nameMatch = nameMatches.last;
+         final typeStr = nameMatch.group(1)!.replaceAll('\n', ' ');
+         final nameRaw = nameMatch.group(2)!;
 
-         // Clean Name
+         // --- 4. DATE (Previous Chunk Tail) ---
+         // Date appears BEFORE Name.
+         // 01 Oct ... Paid to ... UPI ID
+         // So in prevTail, we should find the Date.
+         // It should be the Last date match in the chunk (closest to the Name/ID).
+         final dateMatches = dateRegex.allMatches(prevTail);
+         if (dateMatches.isEmpty) {
+             print("Skipping Tx $txId: Date not found in prev chunk.");
+             continue;
+         }
+         final dateMatch = dateMatches.last;
+         
+         // Reconstruct Date String from groups because of newlines
+         // Group 1: Day, 2: Month, 3: Year, 4: Time
+         final day = dateMatch.group(1)!;
+         final month = dateMatch.group(2)!;
+         final year = dateMatch.group(3)!;
+         final time = dateMatch.group(4)!.replaceAll('\n', ' '); // 08:33 AM
+         
+         final cleanDateStr = "$day $month, $year $time"; // "01 Oct, 2025 08:33 AM"
+
+         // Parsing
          final name = nameRaw.replaceAll('\n', ' ').trim();
          final bool isCredit = typeStr.toLowerCase().contains('received');
-
-         // Parse Date
-         String cleanDateStr = dateStr.replaceAll(RegExp(r'[\s\-\/]+'), ' ').trim(); 
-         
-         if (!cleanDateStr.contains(',')) {
-            // Fix "8 Jan 2026" -> "8 Jan, 2026"
-            // Ensure month (3 letters) is separated from year (4 digits) by comma
-             cleanDateStr = cleanDateStr.replaceAllMapped(
-               RegExp(r'([A-Za-z]{3})\s+(\d{4})'), 
-               (m) => '${m.group(1)}, ${m.group(2)}'
-             );
-         }
 
          final dateFormat = DateFormat("d MMM, yyyy hh:mm a");
          DateTime date;
@@ -170,9 +156,6 @@ class PdfParserService {
          String sender = isCredit ? name : "Self";
          String receiver = isCredit ? "Self" : name;
 
-         // Check for Duplicates? No, we trust the ID uniqueness in DatabaseService.
-         // But logic here just creates the model.
-         
          final tx = TransactionModel(
           id: txId,
           date: date,
