@@ -78,16 +78,19 @@ class PdfParserService {
     // ID is at the start of the chunk (implied, but split consumes the label, so it's just digits)
     final idRegex = RegExp(r'^(\d+)');
     
-    // Amount: Look for ₹ followed by digits/commas
-    final amountRegex = RegExp(r'₹\s*([\d,]+)');
+    // Amount: Look for ₹ OR Rs. OR INR followed by digits/commas
+    // We explicitly exclude the "Total" line if possible, but usually transaction amount is first.
+    final amountRegex = RegExp(r'(?:₹|Rs\.?|INR)\s*([\d,]+)', caseSensitive: false);
     
     // Date: Flexible match
-    // Matches "8 Jan" or "08 Jan", optional comma, year, time
-    final dateRegex = RegExp(r'(\d{1,2}\s+[A-Za-z]{3}.*?\d{4}\s+\d{2}:\d{2}\s+[AP]M)');
+    // Matches "8 Jan" or "08-Jan", separators \s or - or /
+    // 1-2 digits Day, 3 letter Month, 4 digit Year, Time
+    final dateRegex = RegExp(r'(\d{1,2}[\s\-\/]+[A-Za-z]{3}[\s\-\/]+\d{4}\s+\d{2}:\d{2}\s+[AP]M)');
 
-    // Name: Found in the PREVIOUS chunk, near the end.
-    // Usually: "Paid to/Received from [NAME]"
-    final nameRegex = RegExp(r'(Paid\s+to|Received\s+from)\s+([A-Za-z0-9\s\.\-\&]+)$', caseSensitive: false);
+    // Name: Found in the PREVIOUS chunk.
+    // Instead of forcing match at $, we look for the LAST occurrence of "Paid to/Received from"
+    // This is safer against trailing garbage (Ref numbers, status text).
+    final namePattern = RegExp(r'(Paid\s+to|Received\s+from)\s+([A-Za-z0-9\s\.\-\&]+)', caseSensitive: false);
 
     for (int i = 1; i < chunks.length; i++) {
        try {
@@ -96,7 +99,7 @@ class PdfParserService {
 
          // 1. EXTRACT ID
          final idMatch = idRegex.firstMatch(currentChunk);
-         if (idMatch == null) continue; // Should not happen if split worked
+         if (idMatch == null) continue; 
          final txId = idMatch.group(1)!;
 
          // 2. EXTRACT AMOUNT
@@ -116,48 +119,33 @@ class PdfParserService {
          final dateStr = dateMatch.group(1)!;
 
          // 4. EXTRACT NAME (From Previous Chunk)
-         // We look at the very end of the previous chunk
-         // But "Paid to" might be far back if there's junk.
-         // Let's take the last 100 chars of prev chunk to be safe
-         final prevTail = previousChunk.length > 200 
-            ? previousChunk.substring(previousChunk.length - 200) 
+         // We take the last 300 chars to cover reasonably long names + potential garbage
+         final prevTail = previousChunk.length > 300 
+            ? previousChunk.substring(previousChunk.length - 300) 
             : previousChunk;
          
-         final nameMatch = nameRegex.firstMatch(prevTail);
-         // If standard "Paid to" regex fails, try a fallback?
-         // Maybe just grab the text after "Received from" or "Paid to"
-         // Actually currentRegex looks for 'Expected Pattern' at the END ($).
-         // The split might have left "Paid to Rahul " (trailing space). trim() handles that.
+         final nameMatches = namePattern.allMatches(prevTail);
          
          String typeStr = "Paid to"; 
          String nameRaw = "Unknown";
          
-         if (nameMatch != null) {
-            typeStr = nameMatch.group(1)!;
-            nameRaw = nameMatch.group(2)!;
-         } else {
-            // Fallback: Try to find any "Paid to" in the tail
-            final looseNameMatch = RegExp(r'(Paid\s+to|Received\s+from)\s+(.*?)$').firstMatch(prevTail);
-            if (looseNameMatch != null) {
-               typeStr = looseNameMatch.group(1)!;
-               nameRaw = looseNameMatch.group(2)!;
-            }
-         }
+         if (nameMatches.isNotEmpty) {
+            // Take the LAST match, as it's closest to the Transaction ID (Split point)
+            final lastMatch = nameMatches.last;
+            typeStr = lastMatch.group(1)!;
+            nameRaw = lastMatch.group(2)!;
+         } 
 
          // Clean Name
          final name = nameRaw.replaceAll('\n', ' ').trim();
          final bool isCredit = typeStr.toLowerCase().contains('received');
 
-         // Parse Date
-         // E.g. "8 Jan, 2026 08:41 PM"
-         // Cleaning: Remove extra spaces, fix potential weird commas
-         String cleanDateStr = dateStr.replaceAll(RegExp(r'\s+'), ' ').trim();
-         // Insert comma if missing between Month and Year? "8 Jan 2026" -> "8 Jan, 2026"
-         // DateFormat("d MMM, yyyy") expects matching format.
-         // Let's try to normalize: "8 Jan 2026" -> Add comma?
+         // Parse Date with Normalization
+         String cleanDateStr = dateStr.replaceAll(RegExp(r'[\s\-\/]+'), ' ').trim(); 
+         // cleanDateStr is now "8 Jan 2026 08:41 PM" (normalized spaces)
+         
+         // Fix missing comma for "d MMM, yyyy" format expectation
          if (!cleanDateStr.contains(',')) {
-            // Try to insert comma after month (3 letters)
-            // Regex: (\d+ [A-Za-z]{3}) (\d{4})
             cleanDateStr = cleanDateStr.replaceAllMapped(
               RegExp(r'(\d{1,2}\s+[A-Za-z]{3})\s+(\d{4})'), 
               (m) => '${m.group(1)}, ${m.group(2)}'
@@ -170,7 +158,7 @@ class PdfParserService {
             date = dateFormat.parse(cleanDateStr);
          } catch (e) {
             print("Date parse failed for '$cleanDateStr', fallback to current time");
-            date = DateTime.now(); // Fallback
+            date = DateTime.now(); 
          }
 
          String sender = isCredit ? name : "Self";
