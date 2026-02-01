@@ -75,11 +75,13 @@ class PdfParserService {
     final idRegex = RegExp(r'(\d+)');
     final amountRegex = RegExp(r'(?:₹|Rs\.?|INR)\s*([\d,]+(?:\.\d{2})?)', caseSensitive: false);
     
-    // Date: 09\nOct,\n2025 ...
-    // Needs to handle newlines between parts.
-    final dateRegex = RegExp(r'(\d{1,2})[\s\-\/\n]+([A-Za-z]{3})[\s\-\/,\n]+(\d{4})[\s\n]+(\d{2}:\d{2}[\s\n]+[AP]M)');
+    // Date: 09\nOct,\n2025 \n 08:33\nAM
+    // Regex matches the components, handling standard whitespace/newlines/separators.
+    // Normalized to be Case Insensitive for AM/PM
+    final dateRegex = RegExp(r'(\d{1,2})[\s\-\/\n]+([A-Za-z]{3})[\s\-\/,\n]+(\d{4})[\s\n]+(\d{2}:\d{2}[\s\n\r]+[APap][Mm])');
     
     // Name: Paid to\nRahul
+    // Added case insensitive to Name regex too
     final nameRegex = RegExp(r'(Paid\s+to|Received\s+from)[\s\n]+([A-Za-z0-9\s\.\-\&\@]+)', caseSensitive: false);
 
     for (int i = 1; i < chunks.length; i++) {
@@ -94,51 +96,49 @@ class PdfParserService {
          final txId = idMatch.group(1)!;
 
          // --- 2. AMOUNT (Current Chunk Head/Body) ---
-         // Amount comes after ID.
          final amountMatch = amountRegex.firstMatch(currentChunk);
          if (amountMatch == null) {
             print("Skipping Tx $txId: Amount not found.");
             continue;
          }
-         final amountStr = amountMatch.group(1)!.replaceAll(RegExp(r'[\n\r\s,]'), ''); // Remove newlines/commas
+         final amountStr = amountMatch.group(1)!.replaceAll(RegExp(r'[\n\r\s,]'), ''); 
 
-         // --- 3. NAME (Previous Chunk Tail) ---
-         // Logic: The name is immediately before the "UPI Transaction ID" split.
-         // Look at the last portion of prev chunk.
-         final prevTail = previousChunk.length > 600 
-            ? previousChunk.substring(previousChunk.length - 600) 
+         // --- 3. NAME & DATE (Previous Chunk Tail) ---
+         // Increase lookback to 1000 chars to cover large headers or page breaks
+         final prevTail = previousChunk.length > 1000 
+            ? previousChunk.substring(previousChunk.length - 1000) 
             : previousChunk;
             
+         // Find LAST Name
          final nameMatches = nameRegex.allMatches(prevTail);
          if (nameMatches.isEmpty) {
              print("Skipping Tx $txId: Name pattern not found in prev chunk.");
              continue;
          }
-         // The matches are in order. The one relating to *this* ID is the LAST one in the chunk.
          final nameMatch = nameMatches.last;
-         final typeStr = nameMatch.group(1)!.replaceAll('\n', ' ');
+         final typeStr = nameMatch.group(1)!.replaceAll(RegExp(r'\s+'), ' '); // Normalize spaces
          final nameRaw = nameMatch.group(2)!;
 
-         // --- 4. DATE (Previous Chunk Tail) ---
-         // Date appears BEFORE Name.
-         // 01 Oct ... Paid to ... UPI ID
-         // So in prevTail, we should find the Date.
-         // It should be the Last date match in the chunk (closest to the Name/ID).
+         // Check Date logic
+         // We look for Date in the whole tail. The relevant date is the one closest to the Name.
+         // Usually Date appears before Name.
          final dateMatches = dateRegex.allMatches(prevTail);
          if (dateMatches.isEmpty) {
              print("Skipping Tx $txId: Date not found in prev chunk.");
              continue;
          }
+         
+         // Use the last date match found (closest to end of chunk / start of next transaction)
          final dateMatch = dateMatches.last;
          
-         // Reconstruct Date String from groups because of newlines
-         // Group 1: Day, 2: Month, 3: Year, 4: Time
          final day = dateMatch.group(1)!;
          final month = dateMatch.group(2)!;
          final year = dateMatch.group(3)!;
-         final time = dateMatch.group(4)!.replaceAll('\n', ' '); // 08:33 AM
+         // Clean TIME: Replace all whitespace/newlines/carriage-returns with single space
+         // Handles 08:33\r\nAM -> 08:33 AM
+         final time = dateMatch.group(4)!.replaceAll(RegExp(r'\s+'), ' ').toUpperCase(); 
          
-         final cleanDateStr = "$day $month, $year $time"; // "01 Oct, 2025 08:33 AM"
+         final cleanDateStr = "$day $month, $year $time"; 
 
          // Parsing
          final name = nameRaw.replaceAll('\n', ' ').trim();
