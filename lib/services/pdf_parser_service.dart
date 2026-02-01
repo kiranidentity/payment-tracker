@@ -56,115 +56,67 @@ class PdfParserService {
   List<TransactionModel> _parseText(String text) {
     List<TransactionModel> transactions = [];
     
-    // STRATEGY: Split by "UPI Transaction ID".
-    // This anchors every transaction.
-    // Chunk 0: Header + Name of Tx 1
-    // Chunk 1: ID of Tx 1 + Body of Tx 1 + Name of Tx 2
-    // Chunk N: ID of Tx N + Body of Tx N + Footer
+    // FINAL ROBUST REGEX STRATEGY
+    // We use a single complex regex with "Negative Lookaheads" to prevent bleeding.
+    // 
+    // 1. (Paid to|...) : Type
+    // 2. Name: ((?:(?!UPI\s+Transaction).)*?) -> Match anything UNTIL we see "UPI Transaction".
+    //    This prevents the name capture from jumping over an ID if the start is messy.
+    // 3. ID: (\d+)
+    // 4. Amount: (?:₹|Rs\.?|INR)\s*([\d,]+) -> Relaxed symbol
+    // 5. Date: (\d{1,2} [A-Za-z]{3}...) -> Relaxed date (1 or 2 digits)
     
-    // We use a case-insensitive split
-    final delimiter = RegExp(r'UPI\s+Transaction\s+ID:\s*', caseSensitive: false);
-    final chunks = text.split(delimiter);
+    final RegExp robustRegex = RegExp(
+      r'(Paid\s+to|Received\s+from)\s+' // Group 1: Type
+      r'((?:(?!UPI\s+Transaction\s+ID).)*?)\s+' // Group 2: Name (Lazy, stops before Next ID)
+      r'UPI\s+Transaction\s+ID:\s+(\d+)' // Group 3: ID
+      r'.*?' // Skip "Paid by..." junk
+      r'(?:₹|Rs\.?|INR)\s*([\d,]+)' // Group 4: Amount
+      r'.*?' // Skip junk
+      r'(\d{1,2}[\s\-\/]+[A-Za-z]{3}[\s\-\/]+\d{4}\s+\d{2}:\d{2}\s+[AP]M)', // Group 5: Date
+      dotAll: true, 
+      caseSensitive: false,
+    );
 
-    if (chunks.length <= 1) {
-      print("DEBUG: No UPI Transaction IDs found.");
-      return [];
-    }
+    final matches = robustRegex.allMatches(text);
+    print("DEBUG: Found ${matches.length} matches via Regex");
 
-    // We start from 1 because chunks[0] is just the header/preamble for the first Tx.
-    // We define Tx[i] using chunks[i] (which has ID, Amount, Date) and chunks[i-1] (for Name).
-    
-    // Helper Regexes for extracting within a chunk
-    // ID is at the start of the chunk (implied, but split consumes the label, so it's just digits)
-    final idRegex = RegExp(r'^(\d+)');
-    
-    // Amount: Look for ₹ OR Rs. OR INR followed by digits/commas
-    // We explicitly exclude the "Total" line if possible, but usually transaction amount is first.
-    final amountRegex = RegExp(r'(?:₹|Rs\.?|INR)\s*([\d,]+)', caseSensitive: false);
-    
-    // Date: Flexible match
-    // Matches "8 Jan" or "08-Jan", separators \s or - or /
-    // 1-2 digits Day, 3 letter Month, 4 digit Year, Time
-    final dateRegex = RegExp(r'(\d{1,2}[\s\-\/]+[A-Za-z]{3}[\s\-\/]+\d{4}\s+\d{2}:\d{2}\s+[AP]M)');
+    for (var match in matches) {
+      try {
+        final typeStr = match.group(1)!;
+        final nameRaw = match.group(2)!;
+        final txId = match.group(3)!;
+        final amountStr = match.group(4)!.replaceAll(',', '');
+        final dateStr = match.group(5)!;
 
-    // Name: Found in the PREVIOUS chunk.
-    // Instead of forcing match at $, we look for the LAST occurrence of "Paid to/Received from"
-    // This is safer against trailing garbage (Ref numbers, status text).
-    final namePattern = RegExp(r'(Paid\s+to|Received\s+from)\s+([A-Za-z0-9\s\.\-\&]+)', caseSensitive: false);
+        // Clean up Name
+        final name = nameRaw.replaceAll('\n', ' ').trim();
+        final bool isCredit = typeStr.toLowerCase().contains('received');
 
-    for (int i = 1; i < chunks.length; i++) {
-       try {
-         final currentChunk = chunks[i].trim();
-         final previousChunk = chunks[i-1].trim();
+        // Parse Date with Normalization
+        String cleanDateStr = dateStr.replaceAll(RegExp(r'[\s\-\/]+'), ' ').trim(); 
+        
+        // Fix missing comma for "d MMM, yyyy" format expectation
+        if (!cleanDateStr.contains(',')) {
+           cleanDateStr = cleanDateStr.replaceAllMapped(
+             RegExp(r'(\d{1,2}\s+[A-Za-z]{3})\s+(\d{4})'), 
+             (m) => '${m.group(1)}, ${m.group(2)}'
+           );
+        }
 
-         // 1. EXTRACT ID
-         final idMatch = idRegex.firstMatch(currentChunk);
-         if (idMatch == null) continue; 
-         final txId = idMatch.group(1)!;
+        final dateFormat = DateFormat("d MMM, yyyy hh:mm a");
+        DateTime date;
+        try {
+           date = dateFormat.parse(cleanDateStr);
+        } catch (e) {
+           print("Date parse failed for '$cleanDateStr', fallback to current time");
+           date = DateTime.now(); 
+        }
 
-         // 2. EXTRACT AMOUNT
-         final amountMatch = amountRegex.firstMatch(currentChunk);
-         if (amountMatch == null) {
-            print("Skipping Tx $txId: Amount not found");
-            continue;
-         }
-         final amountStr = amountMatch.group(1)!.replaceAll(',', '');
+        String sender = isCredit ? name : "Self";
+        String receiver = isCredit ? "Self" : name;
 
-         // 3. EXTRACT DATE
-         final dateMatch = dateRegex.firstMatch(currentChunk);
-         if (dateMatch == null) {
-            print("Skipping Tx $txId: Date not found");
-            continue;
-         }
-         final dateStr = dateMatch.group(1)!;
-
-         // 4. EXTRACT NAME (From Previous Chunk)
-         // We take the last 300 chars to cover reasonably long names + potential garbage
-         final prevTail = previousChunk.length > 300 
-            ? previousChunk.substring(previousChunk.length - 300) 
-            : previousChunk;
-         
-         final nameMatches = namePattern.allMatches(prevTail);
-         
-         String typeStr = "Paid to"; 
-         String nameRaw = "Unknown";
-         
-         if (nameMatches.isNotEmpty) {
-            // Take the LAST match, as it's closest to the Transaction ID (Split point)
-            final lastMatch = nameMatches.last;
-            typeStr = lastMatch.group(1)!;
-            nameRaw = lastMatch.group(2)!;
-         } 
-
-         // Clean Name
-         final name = nameRaw.replaceAll('\n', ' ').trim();
-         final bool isCredit = typeStr.toLowerCase().contains('received');
-
-         // Parse Date with Normalization
-         String cleanDateStr = dateStr.replaceAll(RegExp(r'[\s\-\/]+'), ' ').trim(); 
-         // cleanDateStr is now "8 Jan 2026 08:41 PM" (normalized spaces)
-         
-         // Fix missing comma for "d MMM, yyyy" format expectation
-         if (!cleanDateStr.contains(',')) {
-            cleanDateStr = cleanDateStr.replaceAllMapped(
-              RegExp(r'(\d{1,2}\s+[A-Za-z]{3})\s+(\d{4})'), 
-              (m) => '${m.group(1)}, ${m.group(2)}'
-            );
-         }
-
-         final dateFormat = DateFormat("d MMM, yyyy hh:mm a");
-         DateTime date;
-         try {
-            date = dateFormat.parse(cleanDateStr);
-         } catch (e) {
-            print("Date parse failed for '$cleanDateStr', fallback to current time");
-            date = DateTime.now(); 
-         }
-
-         String sender = isCredit ? name : "Self";
-         String receiver = isCredit ? "Self" : name;
-
-         final tx = TransactionModel(
+        final tx = TransactionModel(
           id: txId,
           date: date,
           amount: double.parse(amountStr),
@@ -172,13 +124,12 @@ class PdfParserService {
           sender: sender,
           receiver: receiver,
           isCredit: isCredit,
-         );
+        );
 
-         transactions.add(tx);
-
-       } catch (e) {
-         print("Error parsing chunk $i: $e");
-       }
+        transactions.add(tx);
+      } catch (e) {
+        print("Error parsing match: $e");
+      }
     }
 
     return transactions;
