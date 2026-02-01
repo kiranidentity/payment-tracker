@@ -10,6 +10,7 @@ import 'transaction_history_page.dart';
 import 'widgets/unified_header.dart'; // Unified Layout
 import 'widgets/month_navigation_header.dart';
 import 'widgets/contextual_help_button.dart';
+import 'widgets/global_app_bar.dart';
 import 'help_page.dart'; // NEW
 
 class HomePage extends StatefulWidget {
@@ -193,17 +194,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     return UnifiedGradientHeader(
-      title: 'Dashboard', // or 'Overview'
+      title: 'Dashboard', 
       subtitle: '₹${totalReceived.toStringAsFixed(0)} Received • $pendingCount Pending',
-      showBrand: true,
-      trailing: InkWell(
-        onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HelpPage())),
-        child: Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(color: Colors.white.withOpacity(0.1), shape: BoxShape.circle),
-          child: const Icon(Icons.help_outline, color: Colors.white, size: 20),
-        ),
-      ),
       bottomContent: MonthNavigationHeader(
         currentDate: date,
         canGoPrevious: viewModel.canGoPrevious,

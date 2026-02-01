@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../theme/app_theme.dart';
+import 'widgets/global_app_bar.dart';
+import 'widgets/unified_header.dart';
 
 
 class HelpPage extends StatefulWidget {
@@ -17,15 +19,16 @@ class _HelpPageState extends State<HelpPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppTheme.background,
-      appBar: AppBar(
-        title: const Text('Help Center', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppTheme.primary,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+      appBar: const GlobalAppBar(
+        leading: BackButton(color: Colors.white),
       ),
-      body: SingleChildScrollView(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(24),
+      body: Column(
+        children: [
+          const UnifiedGradientHeader(title: 'Help Center'),
+          Expanded(
+            child: SingleChildScrollView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -78,10 +81,13 @@ class _HelpPageState extends State<HelpPage> {
              _buildGlossaryItem('Mapping', 'Linking a "Sender Name" to a "Client" so future payments are auto-recognized.'),
              _buildGlossaryItem('Unmapped', 'A payment from a sender we do not recognize yet.'),
              _buildGlossaryItem('Alias', 'An alternate name for a client (e.g. if Rahul pays from "Rahul Father" account).'),
-          ],
+            ],
+          ),
         ),
       ),
-    );
+    ],
+  ),
+);
   }
 
   Widget _buildSectionTitle(String title) {

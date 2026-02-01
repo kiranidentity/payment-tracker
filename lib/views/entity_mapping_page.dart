@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../theme/app_theme.dart';
 import 'widgets/unified_header.dart';
 import 'widgets/contextual_help_button.dart';
+import 'widgets/global_app_bar.dart';
 
 
 class EntityMappingPage extends StatefulWidget {
@@ -28,12 +29,11 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
         return DefaultTabController(
           length: 3,
           child: Scaffold(
+            appBar: const GlobalAppBar(),
             body: Column(
               children: [
                 UnifiedGradientHeader(
                   title: 'Manage Clients',
-                  showBrand: true,
-                  canGoBack: false,
                   bottomContent: TabBar(
                     labelColor: Colors.white,
                     unselectedLabelColor: Colors.white60,

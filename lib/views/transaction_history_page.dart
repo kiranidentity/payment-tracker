@@ -6,6 +6,7 @@ import '../models/transaction_model.dart';
 import '../theme/app_theme.dart';
 import 'widgets/unified_header.dart';
 import 'widgets/month_navigation_header.dart';
+import 'widgets/global_app_bar.dart';
 
 
 
@@ -30,8 +31,8 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: const GlobalAppBar(),
       backgroundColor: AppTheme.background, 
-      // Remove AppBar, we will build a custom header in the body
       body: Consumer<TransactionViewModel>(
         builder: (context, viewModel, child) {
           
@@ -316,7 +317,6 @@ class _TransactionHistoryPageState extends State<TransactionHistoryPage> {
 
     return UnifiedGradientHeader(
       title: 'Transaction History',
-      showBrand: true, // Brand is now visible
       trailing: IconButton( // Delete Action
         icon: const Icon(Icons.delete_forever, color: Colors.white70),
         tooltip: 'Clear All Data',

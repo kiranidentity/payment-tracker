@@ -6,7 +6,6 @@ class UnifiedGradientHeader extends StatelessWidget {
   final String? subtitle;
   final Widget? trailing;
   final Widget? bottomContent;
-  final bool showBrand;
   final bool canGoBack;
 
   const UnifiedGradientHeader({
@@ -15,7 +14,6 @@ class UnifiedGradientHeader extends StatelessWidget {
     this.subtitle,
     this.trailing,
     this.bottomContent,
-    this.showBrand = true,
     this.canGoBack = false,
   });
 
@@ -42,40 +40,7 @@ class UnifiedGradientHeader extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // BRAND ROW (Always Top)
-          if (showBrand) ...[
-             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.1)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.pie_chart_outline, color: Colors.white.withOpacity(0.9), size: 14),
-                      const SizedBox(width: 8), // Increased spacing for better breathability
-                      const Text(
-                        'PAYMENT TRACKER',
-                        style: TextStyle(
-                          color: Colors.white, 
-                          fontSize: 11, // Slightly larger
-                          fontWeight: FontWeight.bold, 
-                          letterSpacing: 1.0
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (trailing != null) trailing!,
-              ],
-            ),
-            const SizedBox(height: 12), // Reduced height slightly to connect with title
-          ],
+          // TITLE ROW
 
           // TITLE ROW
           Row(
@@ -111,6 +76,11 @@ class UnifiedGradientHeader extends StatelessWidget {
                   ],
                 ),
               ),
+              ),
+              if (trailing != null) ...[
+                const SizedBox(width: 8),
+                trailing!,
+              ]
             ],
           ),
 
