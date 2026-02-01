@@ -272,18 +272,8 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    Text('Monthly Fee: ${e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'Not Set'}'),
-                    const SizedBox(width: 8),
-                    const ContextualHelpButton(
-                      title: "Monthly Fee",
-                      content: "This is the expected amount for this client. We use this to calculate the 'Paid' status and progress bar.",
-                    ),
-                  ],
-                ),
+                // Removed Monthly Fee from here, moving to trailing
                 if (e.aliases.isNotEmpty) ...[
-                  const SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(Icons.link, size: 12, color: Colors.indigo.shade300),
@@ -315,22 +305,21 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Row(
-                  mainAxisSize: MainAxisSize.min,
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                      Text(
-                      '₹${viewModel.getEntityTotal(e.id).toStringAsFixed(0)}',
+                    Text(
+                      e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'No Fee',
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
                     ),
-                    if (e.monthlyLimit != null && e.monthlyLimit! > 0)
-                      Text(
-                        ' / ${e.monthlyLimit!.toStringAsFixed(0)}',
-                        style: const TextStyle(fontWeight: FontWeight.normal, fontSize: 14, color: Colors.grey),
-                      ),
+                    const Text(
+                      'Monthly Fee',
+                      style: TextStyle(fontSize: 10, color: Colors.grey),
+                    ),
                   ],
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 12),
                 IconButton(
                   icon: const Icon(Icons.edit_outlined, color: Colors.blue),
                   tooltip: 'Edit Client',
@@ -382,49 +371,6 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 ),
               if (e.aliases.isNotEmpty) const Divider(height: 1),
 
-              // List of Transactions for this Entity
-              // Sort by date inside getTransactionsForEntity? Or here?
-              // assuming VM returns them. We map them to tiles.
-              ...viewModel.getTransactionsForEntity(e.id).map((tx) {
-                  return ListTile(
-                    dense: true,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
-                    leading: Icon(Icons.subdirectory_arrow_right, size: 16, color: Colors.grey.shade400),
-                    title: Text(
-                      "${DateFormat('dd MMM').format(tx.date)} - ${tx.sender}",
-                      style: TextStyle(fontSize: 13, color: Colors.grey.shade800),
-                    ),
-                    subtitle: tx.mappedAmount != null 
-                    ? Text("Full: ₹${tx.amount.toStringAsFixed(0)}", style: const TextStyle(fontSize: 11))
-                    : null,
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "₹${(tx.mappedAmount ?? tx.amount).toStringAsFixed(0)}",
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        const SizedBox(width: 12),
-                        IconButton(
-                          icon: const Icon(Icons.link_off, color: Colors.orange, size: 18),
-                          tooltip: 'Unmap this transaction',
-                          onPressed: () {
-                            viewModel.unmapTransaction(tx);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Transaction unmapped')),
-                            );
-                          },
-                        )
-                      ],
-                    ),
-                  );
-              }),
-              if (viewModel.getTransactionsForEntity(e.id).isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: Text("No transactions this month.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic)),
-                  ),
-              
               // Footer Actions
               Padding(
                 padding: const EdgeInsets.only(top: 8, bottom: 16, right: 16),
