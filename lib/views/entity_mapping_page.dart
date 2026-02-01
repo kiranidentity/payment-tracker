@@ -17,6 +17,10 @@ class EntityMappingPage extends StatefulWidget {
 }
 
 class _EntityMappingPageState extends State<EntityMappingPage> {
+  Future<void> _refreshData() async {
+    await Provider.of<TransactionViewModel>(context, listen: false).loadTransactions();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<TransactionViewModel>(
