@@ -17,6 +17,15 @@ class EntityMappingPage extends StatefulWidget {
 }
 
 class _EntityMappingPageState extends State<EntityMappingPage> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
   Future<void> _refreshData() async {
     await Provider.of<TransactionViewModel>(context, listen: false).loadTransactions();
   }
@@ -27,19 +36,30 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
       builder: (context, viewModel, child) {
         final unmappedNames = viewModel.getUnmappedNames();
         final ignoredNames = viewModel.getIgnoredSenders();
-        final entities = viewModel.entities;
+        
+        // Filter Entities based on Search
+        final allEntities = viewModel.entities;
+        final filteredEntities = _searchQuery.isEmpty 
+            ? allEntities 
+            : allEntities.where((e) => e.name.toLowerCase().contains(_searchQuery.toLowerCase())).toList();
+
         final inboxCount = unmappedNames.length;
 
         return DefaultTabController(
           length: 3,
           child: Scaffold(
             backgroundColor: AppTheme.background,
-            // Removed GlobalAppBar for cleaner, immersive look
+            floatingActionButton: FloatingActionButton.extended(
+               onPressed: () => _showAddEntityDialog(context, viewModel),
+               icon: const Icon(Icons.person_add),
+               label: const Text("New Client"),
+               backgroundColor: AppTheme.primary,
+            ),
             body: Column(
               children: [
                 UnifiedGradientHeader(
                   title: 'Manage Clients',
-                  subtitle: "Map unmapped entities to clients",
+                  subtitle: "${allEntities.length} active clients",
                   canGoBack: false,
                   useSafePadding: true, // Immersive status bar
                   trailing: IconButton(
@@ -84,34 +104,57 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                 Expanded(
                   child: TabBarView(
               children: [
-                // TAB 1: Clients List
-                ListView(
-                  padding: const EdgeInsets.all(16.0),
+                // TAB 1: Clients List with Search
+                Column(
                   children: [
-                    _buildAddEntitySection(viewModel),
-                    const Divider(height: 32),
-                    
-                    if (entities.isEmpty)
-                      Center(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 40),
-                          child: Column(
-                            children: [
-                              Icon(Icons.people_outline, size: 60, color: Colors.grey.shade300),
-                              const SizedBox(height: 16),
-                              const Text("No clients added yet.", style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
+                    // Search Bar
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                      color: AppTheme.background,
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) => setState(() => _searchQuery = value),
+                        decoration: InputDecoration(
+                          hintText: 'Search clients...',
+                          prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                          filled: true,
+                          fillColor: Colors.white,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 0),
                         ),
-                      )
-                    else ...[
-                      const Text(
-                        'All Clients',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 12),
-                      ...entities.map((e) => _buildClientCard(context, viewModel, e)),
-                    ],
+                    ),
+
+                    Expanded(
+                      child: filteredEntities.isEmpty
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 40),
+                              child: Column(
+                                children: [
+                                  Icon(Icons.search_off, size: 48, color: Colors.grey.shade300),
+                                  const SizedBox(height: 16),
+                                  Text(
+                                    allEntities.isEmpty ? "No clients yet." : "No matching clients found.", 
+                                    style: const TextStyle(color: Colors.grey)
+                                  ),
+                                  if (allEntities.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 8.0),
+                                      child: const Text("Tap the + button to add one.", style: TextStyle(color: Colors.grey)),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.fromLTRB(16, 8, 16, 80), // Bottom padding for FAB
+                            itemCount: filteredEntities.length,
+                            itemBuilder: (context, index) {
+                              return _buildClientCard(context, viewModel, filteredEntities[index]);
+                            },
+                          ),
+                    ),
                   ],
                 ),
 
@@ -162,7 +205,7 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      ...unmappedNames.map((name) => _buildMappingTile(context, viewModel, name, entities)),
+                      ...unmappedNames.map((name) => _buildMappingTile(context, viewModel, name, allEntities)),
                     ]
                   ],
                 ),
@@ -263,6 +306,9 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
 
   // Extracted Client Card Widget
   Widget _buildClientCard(BuildContext context, TransactionViewModel viewModel, EntityModel e) {
+     final feeText = e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'No Fee Set';
+     final feeColor = e.monthlyLimit != null ? const Color(0xFF1E293B) : Colors.grey;
+
      return Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
@@ -279,85 +325,47 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
         child: Theme(
           data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
           child: ExpansionTile(
-            tilePadding: const EdgeInsets.all(16),
-            title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                // Removed Monthly Fee from here, moving to trailing
-                if (e.aliases.isNotEmpty) ...[
-                  Row(
-                    children: [
-                      Icon(Icons.link, size: 12, color: Colors.indigo.shade300),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          // Filter out rule-based aliases for cleaner display here, or show them prettified?
-                          // Let's show simple names. Rules are complex strings.
-                          // Simple alias: "Rahul"
-                          // Rule alias: "rule:500:Rahul"
-                          e.aliases.map((a) {
-                            if (a.startsWith('rule:')) {
-                               final parts = a.split(':');
-                               if(parts.length >= 3) return parts.sublist(2).join(':'); // Just the name part
-                               return 'Rule';
-                            }
-                            return a;
-                          }).toSet().join(', '), 
-                          style: TextStyle(fontSize: 12, color: Colors.indigo.shade300),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ]
-              ],
+            tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            leading: Container(
+              width: 42,
+              height: 42,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: Colors.indigo.shade50,
+                shape: BoxShape.circle,
+              ),
+               child: Text(
+                  e.name.isNotEmpty ? e.name[0].toUpperCase() : 'C',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Colors.indigo.shade700),
+                ),
             ),
-            trailing: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text(
-                      e.monthlyLimit != null ? '₹${e.monthlyLimit!.toStringAsFixed(0)}' : 'No Fee',
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Color(0xFF1E293B)),
-                    ),
-                    const Text(
-                      'Monthly Fee',
-                      style: TextStyle(fontSize: 10, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 12),
-                IconButton(
-                  icon: const Icon(Icons.edit_outlined, color: Colors.blue),
-                  tooltip: 'Edit Client',
-                  onPressed: () => _showEditEntityDialog(context, viewModel, e),
-                ),
-              ],
+            title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            subtitle: Text(
+              "$feeText/month",
+               style: TextStyle(fontSize: 13, color: feeColor, fontWeight: FontWeight.w500),
             ),
             children: [
               const Divider(height: 1),
               
-              // Mapped Aliases Section
-              if (e.aliases.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text("Mapped Names:", style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey)),
-                      const SizedBox(height: 4),
-                      Wrap(
+              // Mapped Aliases Section (Cleaned up)
+              Padding(
+                 padding: const EdgeInsets.all(16),
+                 child: Column(
+                   crossAxisAlignment: CrossAxisAlignment.start,
+                   children: [
+                     const Text("MAPPED SENDERS", style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey, letterSpacing: 0.5)),
+                     const SizedBox(height: 8),
+                     if (e.aliases.isEmpty)
+                        const Text("No senders linked yet.", style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic, fontSize: 13))
+                     else
+                       Wrap(
                         spacing: 8,
-                        runSpacing: 4,
+                        runSpacing: 8,
                         children: e.aliases.map((alias) {
                           String label = alias;
+                          bool isRule = false;
                           if (alias.startsWith("rule:")) {
+                            isRule = true;
                             try {
                               final parts = alias.split(':');
                               if (parts.length >= 3) {
@@ -365,40 +373,56 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
                               }
                             } catch (_) {}
                           }
-                          return Chip(
-                          label: Text(label, style: const TextStyle(fontSize: 12)),
-                          backgroundColor: label.startsWith("₹") ? Colors.indigo.shade100 : Colors.indigo.shade50,
-                          deleteIcon: const Icon(Icons.close, size: 16, color: Colors.grey),
-                          onDeleted: () {
-                              viewModel.removeAlias(e.id, alias);
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(content: Text('Unmapped Rule/Name. Transactions moved to Unmapped.')),
-                              );
-                          },
-                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                          visualDensity: VisualDensity.compact,
-                        );}).toList(),
+                          return Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: isRule ? Colors.purple.shade50 : Colors.indigo.shade50,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: isRule ? Colors.purple.shade100 : Colors.indigo.shade100),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(isRule ? Icons.bolt : Icons.link, size: 14, color: isRule ? Colors.purple : Colors.indigo),
+                                const SizedBox(width: 6),
+                                Text(label, style: TextStyle(fontSize: 12, color: isRule ? Colors.purple.shade900 : Colors.indigo.shade900)),
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () {
+                                     viewModel.removeAlias(e.id, alias);
+                                  },
+                                  child: const Icon(Icons.close, size: 14, color: Colors.grey),
+                                )
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ],
-                  ),
-                ),
-              if (e.aliases.isNotEmpty) const Divider(height: 1),
+                   ],
+                 ),
+              ),
+
+              const Divider(height: 1),
 
               // Footer Actions
               Padding(
-                padding: const EdgeInsets.only(top: 8, bottom: 16, right: 16),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                       TextButton.icon(
-                        icon: const Icon(Icons.link, color: Color(0xFF6366F1), size: 18),
-                        label: const Text("Link Another Sender", style: TextStyle(color: Color(0xFF6366F1))),
+                        icon: const Icon(Icons.edit_outlined, size: 18),
+                        label: const Text("Edit Details"),
+                        onPressed: () => _showEditEntityDialog(context, viewModel, e),
+                      ),
+                      TextButton.icon(
+                        icon: const Icon(Icons.link, size: 18),
+                        label: const Text("Link Sender"),
                         onPressed: () => _showAddAmountDialog(context, viewModel, e),
                       ),
-                      const SizedBox(width: 8),
                       TextButton.icon(
                         icon: Icon(Icons.delete_outline, color: Colors.red.shade400, size: 18),
-                        label: Text("Delete Client", style: TextStyle(color: Colors.red.shade400)),
+                        label: Text("Delete", style: TextStyle(color: Colors.red.shade400)),
                         onPressed: () => _confirmDelete(context, viewModel, e),
                       ),
                   ],
@@ -410,63 +434,62 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
       );
   }
 
-  Widget _buildAddEntitySection(TransactionViewModel viewModel) {
+  // --- NEW DIALOG for FAB ---
+  void _showAddEntityDialog(BuildContext context, TransactionViewModel viewModel) {
     final TextEditingController controller = TextEditingController();
-    final TextEditingController feeController = TextEditingController(); // NEW
+    final TextEditingController feeController = TextEditingController(); 
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Create New Client',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 8),
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Client'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            Expanded(
-              flex: 3,
-              child: TextField(
-                controller: controller,
-                decoration: const InputDecoration(
-                  labelText: 'Client Name (e.g., Rahul)',
-                  border: OutlineInputBorder(),
-                ),
-                textCapitalization: TextCapitalization.words,
+            TextField(
+              controller: controller,
+              decoration: const InputDecoration(
+                labelText: 'Client Name',
+                hintText: 'e.g. Rahul',
+                prefixIcon: Icon(Icons.person),
+                border: OutlineInputBorder(),
               ),
+              textCapitalization: TextCapitalization.words,
+              autofocus: true,
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              flex: 2,
-              child: TextField(
-                controller: feeController,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Fee (₹)',
-                  hintText: 'e.g. 2500', 
-                  border: OutlineInputBorder(),
-                ),
-              ),
-            ),
-            const SizedBox(width: 12),
-            SizedBox(
-              height: 56, // Match standard input height
-              child: ElevatedButton(
-                onPressed: () {
-                  if (controller.text.isNotEmpty) {
-                    double? limit = double.tryParse(feeController.text);
-                    viewModel.addEntity(controller.text, limit: limit);
-                    controller.clear();
-                    feeController.clear();
-                  }
-                },
-                child: const Text('Add'),
+            const SizedBox(height: 16),
+            TextField(
+              controller: feeController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'Monthly Fee (₹)',
+                hintText: 'e.g. 2000', 
+                prefixIcon: Icon(Icons.currency_rupee),
+                border: OutlineInputBorder(),
               ),
             ),
           ],
         ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                double? limit = double.tryParse(feeController.text);
+                viewModel.addEntity(controller.text, limit: limit);
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Added Client: ${controller.text}')),
+                );
+              }
+            },
+            child: const Text('Add Client'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -804,38 +827,51 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
     );
   }
 
-  void _confirmDelete(BuildContext context, TransactionViewModel viewModel, EntityModel entity) {
+  // --- HELPERS (Restore/Delete) ---
+  void _confirmIgnoreSender(BuildContext context, TransactionViewModel viewModel, String name) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Delete "${entity.name}"?'),
-        content: const Text(
-          'Transactions mapped to this student will NOT be deleted.\n\nThey will simply become "Unmapped" again.',
-        ),
+        title: const Text('Ignore Sender?'),
+        content: Text('Transactions from "$name" will be hidden from the unmapped list.'),
         actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              viewModel.deleteEntity(entity.id);
+              viewModel.ignoreSender(name);
               Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Deleted "${entity.name}"')),
-              );
             },
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            child: const Text('Ignore'),
           ),
         ],
       ),
     );
   }
+
+  void _confirmDelete(BuildContext context, TransactionViewModel viewModel, EntityModel entity) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text('Delete ${entity.name}?'),
+        content: const Text('All mapped transactions will be moved back to Unmapped. This cannot be undone.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () {
+              viewModel.deleteEntity(entity.id);
+              Navigator.pop(context);
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showEditEntityDialog(BuildContext context, TransactionViewModel viewModel, EntityModel entity) {
-    final nameController = TextEditingController(text: entity.name);
-    final limitController = TextEditingController(text: entity.monthlyLimit?.toStringAsFixed(0) ?? '');
-    
+    final controller = TextEditingController(text: entity.name);
+    final feeController = TextEditingController(text: entity.monthlyLimit?.toStringAsFixed(0) ?? '');
+
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -844,30 +880,25 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
           mainAxisSize: MainAxisSize.min,
           children: [
             TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Client Name', border: OutlineInputBorder()),
-              enabled: false, // Name editing complicated due to aliases? No, just name. But let's keep it simple for now as user asked for limit.
+              controller: controller,
+              decoration: const InputDecoration(labelText: 'Client Name'),
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: limitController,
+              controller: feeController,
+              decoration: const InputDecoration(labelText: 'Monthly Fee (₹)'),
               keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Monthly Fee (₹)',
-                hintText: 'e.g. 2000',
-                border: OutlineInputBorder(),
-              ),
             ),
           ],
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
           ElevatedButton(
-            onPressed: () async {
-              final amount = double.tryParse(limitController.text);
-              if (amount != null) {
-                 await viewModel.updateClientFee(entity.id, amount);
-                 if (context.mounted) Navigator.pop(context);
+            onPressed: () {
+              if (controller.text.isNotEmpty) {
+                 final limit = double.tryParse(feeController.text);
+                 viewModel.updateEntity(entity.id, controller.text, limit);
+                 Navigator.pop(context);
               }
             },
             child: const Text('Save'),
@@ -877,42 +908,4 @@ class _EntityMappingPageState extends State<EntityMappingPage> {
     );
   }
 
-  Future<void> _confirmIgnoreSender(BuildContext context, TransactionViewModel viewModel, String name) async {
-    final bool? confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Ignore Sender?'),
-        content: Text('Transactions from "$name" will be hidden from the Unmapped list.\n\nYou can restore them later from the "Ignored" tab.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false), // Cancel
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true), // Confirm
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey.shade700, 
-              foregroundColor: Colors.white // Ensure text is white
-            ),
-            child: const Text('Ignore'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await viewModel.ignoreSender(name);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Ignored "$name"'),
-            action: SnackBarAction(
-              label: 'UNDO',
-              onPressed: () => viewModel.unignoreSender(name),
-            ),
-          ),
-        );
-      }
-    }
-  }
 }
